@@ -67,7 +67,10 @@ export default {
 
     const onSubmit = async (values) => {
       try {
-        await register(values)
+        const res = await register({
+          ...values,
+          avatarUrl: '/images/avatar/fzd.png'  // 设置默认头像
+        })
         showSuccessToast('注册成功')
         router.push('/login')
       } catch (error) {

@@ -4,6 +4,7 @@ import com.example.sports.entity.User;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -22,4 +23,11 @@ public interface UserMapper {
     @Insert("INSERT INTO user (nickname, phone, credential, status, points, level, created_at, updated_at) " +
             "VALUES (#{nickname}, #{phone}, #{credential}, #{status}, #{points}, #{level}, #{createdAt}, #{updatedAt})")
     void insert(User user);
+
+    @Update("UPDATE user SET grip_style = #{gripStyle}, racket_config = #{racketConfig}, " +
+            "updated_at = #{updatedAt} WHERE id = #{id}")
+    void update(User user);
+
+    @Select("SELECT * FROM user WHERE nickname LIKE CONCAT('%', #{nickname}, '%')")
+    List<User> searchByNickname(String nickname);
 } 

@@ -3,8 +3,17 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
-    name: 'Home',
-    component: () => import('@/views/Home.vue')
+    redirect: '/games'
+  },
+  {
+    path: '/games',
+    name: 'Games',
+    component: () => import('@/views/games/GameList.vue')
+  },
+  {
+    path: '/games/:id',
+    name: 'GameDetail',
+    component: () => import('@/views/games/GameDetail.vue')
   },
   {
     path: '/login',
@@ -15,6 +24,26 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: () => import('@/views/user/Register.vue')
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/user/Profile.vue')
+  },
+  {
+    path: '/user/detail',
+    name: 'UserDetail',
+    component: () => import('@/views/user/UserDetail.vue')
+  },
+  {
+    path: '/user/edit',
+    name: 'UserEdit',
+    component: () => import('@/views/user/UserEdit.vue')
+  },
+  {
+    path: '/points',
+    name: 'Points',
+    component: () => import('@/views/points/PointsSearch.vue')
   }
   // ... 其他路由配置
 ]

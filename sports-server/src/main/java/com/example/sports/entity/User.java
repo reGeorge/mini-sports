@@ -13,6 +13,11 @@ public class User {
     private Integer points;
     private String level;
     private Integer status;
+    private String idType;        // 证件类型
+    private String idNumber;      // 证件号码
+    private String address;       // 居住地
+    private String gripStyle;     // 握拍方式
+    private String racketConfig;  // 球拍配置
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 } 

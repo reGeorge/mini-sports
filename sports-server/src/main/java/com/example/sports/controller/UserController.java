@@ -3,6 +3,7 @@ package com.example.sports.controller;
 import com.example.sports.common.response.Result;
 import com.example.sports.dto.LoginDTO;
 import com.example.sports.dto.RegisterDTO;
+import com.example.sports.dto.UpdateUserDTO;
 import com.example.sports.entity.User;
 import com.example.sports.mapper.UserMapper;
 import com.example.sports.service.UserService;
@@ -41,6 +42,12 @@ public class UserController {
     @PostMapping("/login")
     public Result<User> login(@Validated @RequestBody LoginDTO loginDTO) {
         User user = userService.login(loginDTO);
+        return Result.success(user);
+    }
+
+    @PostMapping("/update")
+    public Result<User> update(@RequestBody UpdateUserDTO updateUserDTO) {
+        User user = userService.update(updateUserDTO);
         return Result.success(user);
     }
 } 

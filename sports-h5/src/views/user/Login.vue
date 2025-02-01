@@ -60,7 +60,8 @@ export default {
         showSuccessToast('登录成功')
         // 存储用户信息
         localStorage.setItem('userInfo', JSON.stringify(res.data))
-        router.push('/')
+        // 跳转到个人信息页面
+        router.push('/profile')
       } catch (error) {
         showFailToast(error.response?.data?.message || '登录失败')
       }

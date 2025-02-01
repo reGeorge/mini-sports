@@ -2,6 +2,7 @@ package com.example.sports.service.impl;
 
 import com.example.sports.dto.LoginDTO;
 import com.example.sports.dto.RegisterDTO;
+import com.example.sports.dto.UpdateUserDTO;
 import com.example.sports.entity.User;
 import com.example.sports.mapper.UserMapper;
 import com.example.sports.service.UserService;
@@ -79,5 +80,26 @@ public class UserServiceImpl implements UserService {
         }
 
         return user;
+    }
+
+    @Override
+    public User update(UpdateUserDTO updateUserDTO) {
+        if (updateUserDTO.getId() == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        
+        User existingUser = userMapper.findById(updateUserDTO.getId());
+        if (existingUser == null) {
+            throw new RuntimeException("用户不存在");
+        }
+
+        // 更新用户信息
+        existingUser.setGripStyle(updateUserDTO.getGripStyle());
+        existingUser.setRacketConfig(updateUserDTO.getRacketConfig());
+        existingUser.setUpdatedAt(LocalDateTime.now());
+        
+        userMapper.update(existingUser);
+        
+        return existingUser;
     }
 } 

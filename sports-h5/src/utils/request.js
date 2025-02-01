@@ -2,7 +2,7 @@ import axios from 'axios'
 import { showToast } from 'vant'
 
 const service = axios.create({
-  baseURL: process.env.NODE_ENV === 'development' ? '/api' : '/api',  // 根据环境设置baseURL
+  baseURL: '/api',  // 使用相对路径，让代理配置生效
   timeout: 5000
 })
 

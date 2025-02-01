@@ -4,7 +4,10 @@
     
     <div class="content">
       <h2>欢迎使用球赛小程序</h2>
-      <van-button type="primary" @click="goToRegister">注册</van-button>
+      <div class="auth-buttons">
+        <van-button type="primary" @click="goToLogin">登录</van-button>
+        <van-button plain type="primary" @click="goToRegister">注册</van-button>
+      </div>
     </div>
   </div>
 </template>
@@ -13,6 +16,9 @@
 export default {
   name: 'Home',
   methods: {
+    goToLogin() {
+      this.$router.push('/login')
+    },
     goToRegister() {
       this.$router.push('/register')
     }
@@ -28,5 +34,11 @@ export default {
 
 h2 {
   margin-bottom: 20px;
+}
+
+.auth-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 </style> 

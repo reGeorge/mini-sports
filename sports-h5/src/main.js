@@ -1,7 +1,24 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import { Button, Form, Field, CellGroup, NavBar, Toast } from 'vant'
+import { 
+  Button, 
+  Form, 
+  Field, 
+  CellGroup, 
+  NavBar, 
+  Toast,
+  Image as VanImage,
+  Icon,
+  Cell,
+  Tabbar,
+  TabbarItem,
+  Radio,
+  RadioGroup,
+  Search,
+  Empty,
+  Popup
+} from 'vant'
 import 'vant/lib/index.css'
 
 const app = createApp(App)
@@ -13,6 +30,16 @@ app.use(Button)
    .use(CellGroup)
    .use(NavBar)
    .use(Toast)
+   .use(VanImage)
+   .use(Icon)
+   .use(Cell)
+   .use(Tabbar)
+   .use(TabbarItem)
+   .use(Radio)
+   .use(RadioGroup)
+   .use(Search)
+   .use(Empty)
+   .use(Popup)
 
 app.use(router)
-app.mount('#app') 
+app.mount('#app')
