@@ -6,10 +6,10 @@ USE sports_db;
 -- 用户表
 CREATE TABLE IF NOT EXISTS user (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '用户ID',
-    open_id VARCHAR(100) NOT NULL UNIQUE COMMENT '微信OpenID',
     nickname VARCHAR(50) COMMENT '用户昵称',
     avatar_url VARCHAR(255) COMMENT '头像URL',
     phone VARCHAR(20) COMMENT '手机号',
+    credential VARCHAR(100) COMMENT '密码',
     points INT DEFAULT 0 COMMENT '积分',
     level VARCHAR(20) DEFAULT 'BEGINNER' COMMENT '技术等级',
     status TINYINT DEFAULT 1 COMMENT '状态 1:正常 0:禁用',

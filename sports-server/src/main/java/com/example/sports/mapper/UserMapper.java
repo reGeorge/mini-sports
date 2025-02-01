@@ -1,6 +1,7 @@
 package com.example.sports.mapper;
 
 import com.example.sports.entity.User;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
@@ -14,4 +15,11 @@ public interface UserMapper {
     
     @Select("SELECT * FROM user")
     List<User> findAll();
+
+    @Select("SELECT * FROM user WHERE nickname = #{nickname}")
+    User findByNickname(String nickname);
+
+    @Insert("INSERT INTO user (nickname, phone, credential, status, points, level, created_at, updated_at) " +
+            "VALUES (#{nickname}, #{phone}, #{credential}, #{status}, #{points}, #{level}, #{createdAt}, #{updatedAt})")
+    void insert(User user);
 } 
