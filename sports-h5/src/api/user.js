@@ -22,4 +22,39 @@ export function updateUser(data) {
     method: 'post',
     data
   })
+}
+
+// 搜索用户
+export function searchUsers(nickname) {
+  return request({
+    url: '/user/search',
+    method: 'get',
+    params: { nickname }
+  })
+}
+
+// 获取用户角色
+export function getUserRoles(userId) {
+  return request({
+    url: `/user/${userId}/roles`,
+    method: 'get'
+  })
+}
+
+// 分配用户角色
+export function assignUserRoles(userId, roleIds) {
+  return request({
+    url: `/user/${userId}/roles`,
+    method: 'put',
+    data: { roleIds }
+  })
+}
+
+// 管理员注册
+export function registerAdmin(data) {
+  return request({
+    url: '/user/register/admin',
+    method: 'post',
+    data
+  })
 } 

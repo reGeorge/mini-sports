@@ -44,6 +44,21 @@ const routes = [
     path: '/points',
     name: 'Points',
     component: () => import('@/views/points/PointsSearch.vue')
+  },
+  {
+    path: '/admin/roles',
+    name: 'RoleList',
+    component: () => import('@/views/admin/RoleList.vue')
+  },
+  {
+    path: '/admin/user-roles',
+    name: 'UserRoleAssign',
+    component: () => import('@/views/admin/UserRoleAssign.vue')
+  },
+  {
+    path: '/admin/register',
+    name: 'AdminRegister',
+    component: () => import('@/views/admin/AdminRegister.vue')
   }
   // ... 其他路由配置
 ]

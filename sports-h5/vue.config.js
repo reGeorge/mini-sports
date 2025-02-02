@@ -11,6 +11,11 @@ module.exports = defineConfig({
         changeOrigin: true,
         pathRewrite: {
           '^/api': '/api'
+        },
+        logLevel: 'debug',
+        onProxyReq(proxyReq, req) {
+          console.log('原始请求:', `http://localhost:${req.socket.localPort}${req.url}`);
+          console.log('代理到目标:', `${proxyReq.protocol}//${proxyReq.host}:8088${proxyReq.path}`);
         }
       }
     }

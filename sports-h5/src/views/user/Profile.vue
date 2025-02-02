@@ -88,6 +88,7 @@ export default {
 
     const handleLogout = () => {
       localStorage.removeItem('userInfo')
+      localStorage.removeItem('token')
       showToast('退出成功')
       router.push('/login')
     }

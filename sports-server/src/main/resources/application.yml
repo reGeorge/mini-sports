@@ -44,4 +44,6 @@ logging:
   level:
     root: INFO
     com.example.sports: DEBUG
-    org.springframework.web: DEBUG 
+    org.springframework.web: DEBUG
+  file:
+    name: logs/spring.log 

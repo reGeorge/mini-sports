@@ -8,16 +8,21 @@ import com.example.sports.mapper.UserMapper;
 import com.example.sports.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.DigestUtils;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
 
     @Autowired
     private UserMapper userMapper;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public User register(RegisterDTO registerDTO) {
@@ -43,10 +48,9 @@ public class UserServiceImpl implements UserService {
         user.setPhone(registerDTO.getPhone());
         
         // 密码加密存储
-        String encryptedPassword = DigestUtils.md5DigestAsHex(
-            registerDTO.getPassword().getBytes()
-        );
-        user.setCredential(encryptedPassword);
+        String encodedPassword = passwordEncoder.encode(registerDTO.getPassword());
+        log.info("普通用户注册密码明文：{}，密文：{}", registerDTO.getPassword(), encodedPassword);
+        user.setCredential(encodedPassword);
         
         // 设置其他默认值
         user.setStatus(1);
@@ -68,9 +72,12 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户不存在");
         }
 
+        log.info("用户登录，昵称：{}，密码明文：{}，数据库密文：{}", 
+            loginDTO.getNickname(), loginDTO.getPassword(), user.getCredential());
+
         // 验证密码
-        String encryptedPassword = DigestUtils.md5DigestAsHex(loginDTO.getPassword().getBytes());
-        if (!user.getCredential().equals(encryptedPassword)) {
+        if (!passwordEncoder.matches(loginDTO.getPassword(), user.getCredential())) {
+            log.warn("密码验证失败");
             throw new RuntimeException("密码错误");
         }
 
@@ -101,5 +108,16 @@ public class UserServiceImpl implements UserService {
         userMapper.update(existingUser);
         
         return existingUser;
+    }
+
+    @Override
+    public User findByNickname(String nickname) {
+        return userMapper.findByNickname(nickname);
+    }
+    
+    @Override
+    public User save(User user) {
+        userMapper.insert(user);
+        return user;
     }
 } 

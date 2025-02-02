@@ -9,4 +9,6 @@ public interface UserService {
     User register(RegisterDTO registerDTO);
     User login(LoginDTO loginDTO);
     User update(UpdateUserDTO updateUserDTO);
+    User findByNickname(String nickname);
+    User save(User user);
 } 

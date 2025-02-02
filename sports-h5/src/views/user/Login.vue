@@ -36,6 +36,11 @@
     <div class="register-link">
       <span @click="goToRegister">还没有账号？去注册</span>
     </div>
+
+    <div class="form-footer">
+      <router-link to="/register">普通用户注册</router-link>
+      <router-link to="/admin/register" class="admin-register">管理员注册</router-link>
+    </div>
   </div>
 </template>
 
@@ -58,8 +63,9 @@ export default {
       try {
         const res = await login(values)
         showSuccessToast('登录成功')
-        // 存储用户信息
-        localStorage.setItem('userInfo', JSON.stringify(res.data))
+        // 存储用户信息和token
+        localStorage.setItem('userInfo', JSON.stringify(res.data.user))
+        localStorage.setItem('token', res.data.token)
         // 跳转到个人信息页面
         router.push('/profile')
       } catch (error) {
@@ -96,5 +102,17 @@ export default {
 }
 .register-link span {
   cursor: pointer;
+}
+.form-footer {
+  text-align: center;
+  margin-top: 16px;
+}
+.form-footer a {
+  margin: 0 10px;
+  color: #1989fa;
+  text-decoration: none;
+}
+.admin-register {
+  color: #1989fa;
 }
 </style> 

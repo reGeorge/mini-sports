@@ -28,3 +28,39 @@ CREATE TABLE IF NOT EXISTS user_auth (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     UNIQUE KEY uk_type_identifier (identity_type, identifier)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户认证表'; 
+
+
+-- 角色表
+CREATE TABLE role (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    description VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 权限表
+CREATE TABLE permission (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    code VARCHAR(100) NOT NULL,
+    description VARCHAR(200),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 角色权限关联表
+CREATE TABLE role_permission (
+    role_id INT,
+    permission_id INT,
+    PRIMARY KEY (role_id, permission_id),
+    FOREIGN KEY (role_id) REFERENCES role(id),
+    FOREIGN KEY (permission_id) REFERENCES permission(id)
+);
+
+-- 用户角色关联表
+CREATE TABLE user_role (
+    user_id BIGINT,
+    role_id INT,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (role_id) REFERENCES role(id)
+);

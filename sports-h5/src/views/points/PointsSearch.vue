@@ -42,7 +42,7 @@
       </div>
 
       <!-- 用户详情弹窗 -->
-      <van-popup v-model:show="showDetailPopup" round position="bottom" :style="{ height: '70%' }">
+      <van-popup v-model:show="showDetailPopup" round position="bottom" :style="{ height: '80%' }">
         <div class="detail-popup" v-if="selectedUser">
           <div class="popup-header">
             <div class="header-title">详细信息</div>
@@ -58,20 +58,16 @@
               <span class="value">{{ selectedUser.nickname }}</span>
             </div>
             <div class="info-row">
-              <span class="label">性别</span>
-              <span class="value">{{ selectedUser.gender }}</span>
-            </div>
-            <div class="info-row">
-              <span class="label">当前积分</span>
-              <span class="value">{{ selectedUser.points }}</span>
-            </div>
-            <div class="info-row">
               <span class="label">握拍方式</span>
               <span class="value">{{ selectedUser.gripStyle }}</span>
             </div>
             <div class="info-row">
               <span class="label">球拍配置</span>
               <span class="value">{{ selectedUser.racketConfig }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">当前积分</span>
+              <span class="value">{{ selectedUser.points }}</span>
             </div>
             <div class="info-row">
               <span class="label">水平级别</span>
