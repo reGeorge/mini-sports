@@ -73,6 +73,8 @@ import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import TabbarLayout from '@/components/layout/TabbarLayout.vue'
 import { getUserRoles } from '@/api/user'
+import { getUserPermissions } from '@/api/permission'
+import { hasRole, hasPermission } from '@/utils/permission'
 
 export default {
   name: 'Profile',
@@ -91,20 +93,24 @@ export default {
         const parsedUserInfo = JSON.parse(storedUserInfo)
         
         try {
-          // 从后端重新获取用户的角色信息
-          const rolesRes = await getUserRoles(parsedUserInfo.id)
+          // 从后端重新获取用户的角色和权限信息
+          const [rolesRes, permissionsRes] = await Promise.all([
+            getUserRoles(parsedUserInfo.id),
+            getUserPermissions(parsedUserInfo.id)
+          ])
+          
           parsedUserInfo.roles = rolesRes.data
           
-          // 更新 localStorage 中的用户信息
+          // 更新 localStorage 中的用户信息和权限
           localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo))
+          localStorage.setItem('userPermissions', JSON.stringify(permissionsRes.data))
           
           // 更新页面显示
           userInfo.value = parsedUserInfo
-          const userRoles = parsedUserInfo.roles || []
-          hasAdminRole.value = userRoles.some(role => role.code === 'ROLE_ADMIN')
+          hasAdminRole.value = hasRole('ROLE_ADMIN')
         } catch (error) {
-          console.error('获取用户角色失败:', error)
-          showToast('获取用户角色失败')
+          console.error('获取用户信息失败:', error)
+          showToast('获取用户信息失败')
         }
       } else {
         router.push('/login')

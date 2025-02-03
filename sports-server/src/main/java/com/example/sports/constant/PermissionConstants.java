@@ -18,6 +18,7 @@ public class PermissionConstants {
     public static final String GAME_EDIT = "game:edit";
     public static final String GAME_DELETE = "game:delete";
     public static final String GAME_AUDIT = "game:audit";
+    public static final String GAME_REGISTER = "game:register";
 
     // 积分管理权限
     public static final String POINTS_VIEW = "points:view";

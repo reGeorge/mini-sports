@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Set;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/role")
@@ -70,6 +71,15 @@ public class RoleController {
     @DeleteMapping("/assign")
     public Result<Void> removeUserRole(@RequestParam Long userId, @RequestParam Integer roleId) {
         roleService.removeUserRole(userId, roleId);
+        return Result.success();
+    }
+    
+    @PutMapping("/{roleId}/permissions")
+    public Result<Void> updateRolePermissions(
+            @PathVariable Integer roleId,
+            @RequestBody Map<String, List<Integer>> requestBody) {
+        List<Integer> permissionIds = requestBody.get("permissionIds");
+        roleService.updateRolePermissions(roleId, permissionIds);
         return Result.success();
     }
 } 

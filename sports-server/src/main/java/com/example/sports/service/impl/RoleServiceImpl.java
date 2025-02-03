@@ -101,4 +101,18 @@ public class RoleServiceImpl implements RoleService {
             assignUserRole(userId, roleId.intValue());  // 转换为Integer
         }
     }
+    
+    @Override
+    @Transactional
+    public void updateRolePermissions(Integer roleId, List<Integer> permissionIds) {
+        // 先删除该角色的所有权限
+        roleMapper.deleteRolePermissions(roleId);
+        
+        // 重新添加权限
+        if (permissionIds != null && !permissionIds.isEmpty()) {
+            for (Integer permissionId : permissionIds) {
+                roleMapper.addPermission(roleId, permissionId);
+            }
+        }
+    }
 } 

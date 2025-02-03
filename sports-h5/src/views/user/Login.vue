@@ -49,6 +49,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { showSuccessToast, showFailToast } from 'vant'
 import { login } from '@/api/user'
+import { getUserPermissions } from '@/api/permission'
 
 export default {
   name: 'Login',
@@ -62,10 +63,16 @@ export default {
     const onSubmit = async (values) => {
       try {
         const res = await login(values)
-        showSuccessToast('登录成功')
         // 存储用户信息和token
         localStorage.setItem('userInfo', JSON.stringify(res.data.user))
         localStorage.setItem('token', res.data.token)
+        
+        // 获取用户权限
+        const permissionsRes = await getUserPermissions(res.data.user.id)
+        localStorage.setItem('userPermissions', JSON.stringify(permissionsRes.data))
+        
+        showSuccessToast('登录成功')
+        
         // 根据用户角色决定跳转页面
         const userRoles = res.data.user.roles || []
         const isAdmin = userRoles.some(role => role.code === 'ROLE_ADMIN')

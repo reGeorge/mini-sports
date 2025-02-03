@@ -16,11 +16,11 @@ public interface RoleMapper {
     @Select("SELECT * FROM role")
     List<Role> findAll();
     
-    @Insert("INSERT INTO role(name, description) VALUES(#{name}, #{description})")
+    @Insert("INSERT INTO role(name, code, description) VALUES(#{name}, #{code}, #{description})")
     @Options(useGeneratedKeys = true, keyProperty = "id")
     int insert(Role role);
     
-    @Update("UPDATE role SET name = #{name}, description = #{description} WHERE id = #{id}")
+    @Update("UPDATE role SET name = #{name}, code = #{code}, description = #{description} WHERE id = #{id}")
     int update(Role role);
     
     @Delete("DELETE FROM role WHERE id = #{id}")
@@ -32,10 +32,13 @@ public interface RoleMapper {
     Set<Permission> findPermissionsByRoleId(Integer roleId);
     
     @Insert("INSERT INTO role_permission(role_id, permission_id) VALUES(#{roleId}, #{permissionId})")
-    int addPermission(@Param("roleId") Integer roleId, @Param("permissionId") Integer permissionId);
+    void addPermission(Integer roleId, Integer permissionId);
     
     @Delete("DELETE FROM role_permission WHERE role_id = #{roleId} AND permission_id = #{permissionId}")
-    int removePermission(@Param("roleId") Integer roleId, @Param("permissionId") Integer permissionId);
+    void removePermission(Integer roleId, Integer permissionId);
+    
+    @Delete("DELETE FROM role_permission WHERE role_id = #{roleId}")
+    void deleteRolePermissions(Integer roleId);
 
     @Select("SELECT * FROM role WHERE code = #{code}")
     Role findByCode(String code);

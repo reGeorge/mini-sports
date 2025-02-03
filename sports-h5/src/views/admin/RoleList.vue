@@ -21,39 +21,38 @@
             <div class="action-buttons">
               <van-button size="small" type="primary" @click="editRole(role)">编辑</van-button>
               <van-button size="small" type="info" @click="managePermissions(role)">权限</van-button>
-              <van-button size="small" type="danger" @click="confirmDelete(role)">删除</van-button>
             </div>
           </template>
         </van-cell>
       </van-cell-group>
     </div>
 
-    <!-- 添加按钮 -->
-    <van-button 
-      type="primary" 
-      class="add-button"
-      size="large"
-      @click="showAddDialog = true"
-    >
-      添加角色
-    </van-button>
-
-    <!-- 添加/编辑角色弹窗 -->
+    <!-- 编辑角色弹窗 -->
     <van-dialog
       v-model:show="showAddDialog"
-      :title="editingRole ? '编辑角色' : '添加角色'"
+      title="编辑角色"
       show-cancel-button
-      @confirm="saveRole"
+      @confirm="handleSubmit"
+      @cancel="resetForm"
     >
-      <van-form>
+      <van-form ref="roleFormRef">
         <van-field
           v-model="roleForm.name"
+          name="name"
           label="角色名称"
           placeholder="请输入角色名称"
           :rules="[{ required: true, message: '请填写角色名称' }]"
         />
         <van-field
+          v-model="roleForm.code"
+          name="code"
+          label="角色代码"
+          placeholder="请输入角色代码，如：ROLE_REFEREE"
+          :rules="[{ required: true, message: '请填写角色代码' }]"
+        />
+        <van-field
           v-model="roleForm.description"
+          name="description"
           label="角色描述"
           type="textarea"
           placeholder="请输入角色描述"
@@ -75,21 +74,28 @@
           left-arrow
           @click-left="showPermissionDialog = false"
         />
-        <van-checkbox-group v-model="selectedPermissions">
-          <van-cell-group>
-            <van-cell
-              v-for="permission in permissions"
-              :key="permission.id"
-              :title="permission.name"
-              clickable
-              @click="togglePermission(permission.id)"
-            >
-              <template #right-icon>
-                <van-checkbox :name="permission.id" ref="checkboxRefs" />
-              </template>
-            </van-cell>
-          </van-cell-group>
-        </van-checkbox-group>
+        <div class="permission-content">
+          <van-checkbox-group v-model="selectedPermissions">
+            <van-cell-group>
+              <van-cell
+                v-for="permission in permissions"
+                :key="permission.id"
+                :title="permission.name"
+                :label="permission.description"
+                clickable
+                @click="togglePermission(permission.id)"
+              >
+                <template #right-icon>
+                  <van-checkbox 
+                    :name="permission.id" 
+                    ref="checkboxRefs"
+                    :checked="selectedPermissions.includes(permission.id)"
+                  />
+                </template>
+              </van-cell>
+            </van-cell-group>
+          </van-checkbox-group>
+        </div>
         <div class="permission-actions">
           <van-button type="primary" block @click="savePermissions">保存权限</van-button>
         </div>
@@ -101,8 +107,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast, showDialog } from 'vant'
-import { getRoles, createRole, updateRole, deleteRole, getRolePermissions, updateRolePermissions } from '@/api/role'
+import { showToast } from 'vant'
+import { getRoles, updateRole, getRolePermissions, updateRolePermissions } from '@/api/role'
 import { getPermissions } from '@/api/permission'
 
 const router = useRouter()
@@ -116,8 +122,11 @@ const selectedPermissions = ref([])
 
 const roleForm = ref({
   name: '',
+  code: '',
   description: ''
 })
+
+const roleFormRef = ref(null)
 
 // 获取角色列表
 const loadRoles = async () => {
@@ -143,25 +152,40 @@ const loadPermissions = async () => {
 const loadRolePermissions = async (roleId) => {
   try {
     const res = await getRolePermissions(roleId)
-    selectedPermissions.value = res.data.map(p => p.id)
+    // 确保返回的权限数据是数组
+    const permissions = Array.isArray(res.data) ? res.data : []
+    // 设置选中的权限ID
+    selectedPermissions.value = permissions.map(p => p.id)
+    console.log('已选中的权限:', selectedPermissions.value)
   } catch (error) {
+    console.error('获取角色权限失败:', error)
     showToast('获取角色权限失败')
   }
 }
 
-// 保存角色
-const saveRole = async () => {
+// 处理表单提交
+const handleSubmit = async () => {
   try {
-    if (editingRole.value) {
-      await updateRole(editingRole.value.id, roleForm.value)
-    } else {
-      await createRole(roleForm.value)
+    // 验证表单
+    await roleFormRef.value?.validate()
+    
+    const formData = {
+      name: roleForm.value.name,
+      code: roleForm.value.code,
+      description: roleForm.value.description
     }
+    
+    console.log('提交表单数据:', formData)
+    await updateRole(editingRole.value.id, formData)
+    
     showToast('保存成功')
     loadRoles()
     resetForm()
+    return true
   } catch (error) {
-    showToast('保存失败')
+    console.error('保存角色失败:', error)
+    showToast(error.response?.data?.message || error.message || '保存失败')
+    return false
   }
 }
 
@@ -170,42 +194,32 @@ const editRole = (role) => {
   editingRole.value = role
   roleForm.value = {
     name: role.name,
+    code: role.code,
     description: role.description
   }
   showAddDialog.value = true
 }
 
-// 删除角色
-const confirmDelete = (role) => {
-  showDialog({
-    title: '确认删除',
-    message: `确定要删除角色 "${role.name}" 吗？`,
-    showCancelButton: true,
-  }).then(async () => {
-    try {
-      await deleteRole(role.id)
-      showToast('删除成功')
-      loadRoles()
-    } catch (error) {
-      showToast('删除失败')
-    }
-  })
-}
-
 // 管理权限
 const managePermissions = async (role) => {
   currentRole.value = role
-  showPermissionDialog.value = true
+  // 先加载所有权限
+  await loadPermissions()
+  // 再加载角色的权限
   await loadRolePermissions(role.id)
+  showPermissionDialog.value = true
 }
 
 // 保存权限
 const savePermissions = async () => {
   try {
-    await updateRolePermissions(currentRole.value.id, selectedPermissions.value)
+    // 确保所有ID都是数字类型
+    const permissionIds = selectedPermissions.value.map(Number)
+    await updateRolePermissions(currentRole.value.id, permissionIds)
     showToast('保存成功')
     showPermissionDialog.value = false
   } catch (error) {
+    console.error('保存权限失败:', error)
     showToast('保存失败')
   }
 }
@@ -218,13 +232,16 @@ const togglePermission = (permissionId) => {
   } else {
     selectedPermissions.value.push(permissionId)
   }
+  console.log('当前选中的权限:', selectedPermissions.value)
 }
 
 // 重置表单
 const resetForm = () => {
+  console.log('重置表单')
   editingRole.value = null
   roleForm.value = {
     name: '',
+    code: '',
     description: ''
   }
 }
@@ -265,21 +282,27 @@ onMounted(() => {
   gap: 8px;
 }
 
-.add-button {
-  position: fixed;
-  bottom: 20px;
-  left: 16px;
-  right: 16px;
-}
-
 .permission-dialog {
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+
+.permission-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 80px;
 }
 
 .permission-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   padding: 16px;
-  margin-top: auto;
+  background-color: #fff;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+  z-index: 99;
 }
 </style> 

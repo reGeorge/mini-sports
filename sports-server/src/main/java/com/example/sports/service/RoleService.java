@@ -16,6 +16,7 @@ public interface RoleService {
     Set<Permission> findPermissions(Integer roleId);
     void addPermission(Integer roleId, Integer permissionId);
     void removePermission(Integer roleId, Integer permissionId);
+    void updateRolePermissions(Integer roleId, List<Integer> permissionIds);
     
     void assignUserRole(Long userId, Integer roleId);
     void removeUserRole(Long userId, Integer roleId);
