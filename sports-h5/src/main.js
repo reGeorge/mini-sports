@@ -1,51 +1,81 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import { 
-  Button, 
-  Form, 
-  Field, 
-  CellGroup, 
-  NavBar, 
-  Toast,
-  Image as VanImage,
-  Icon,
+
+// 导入 Vant 样式
+import 'vant/lib/index.css'
+
+// 导入 Vant 组件
+import {
+  Button,
+  NavBar,
+  Form,
+  Field,
+  CellGroup,
   Cell,
+  Icon,
+  Tag,
+  Card,
+  Search,
+  DropdownMenu,
+  DropdownItem,
+  PullRefresh,
+  List,
+  FloatingBubble,
+  Popup,
+  DatePicker,
+  Picker,
+  Dialog,
+  Toast,
   Tabbar,
   TabbarItem,
-  Radio,
-  RadioGroup,
-  Search,
   Empty,
-  Popup,
   Checkbox,
   CheckboxGroup,
-  Tag
+  TimePicker,
+  PickerGroup,
+  Radio,
+  RadioGroup
 } from 'vant'
-import 'vant/lib/index.css'
 
 const app = createApp(App)
 
 // 注册 Vant 组件
-app.use(Button)
-   .use(Form)
-   .use(Field)
-   .use(CellGroup)
-   .use(NavBar)
-   .use(Toast)
-   .use(VanImage)
-   .use(Icon)
-   .use(Cell)
-   .use(Tabbar)
-   .use(TabbarItem)
-   .use(Radio)
-   .use(RadioGroup)
-   .use(Search)
-   .use(Empty)
-   .use(Popup)
-   .use(Checkbox)
-   .use(CheckboxGroup)
-   .use(Tag)
+const vantComponents = [
+  Button,
+  NavBar,
+  Form,
+  Field,
+  CellGroup,
+  Cell,
+  Icon,
+  Tag,
+  Card,
+  Search,
+  DropdownMenu,
+  DropdownItem,
+  PullRefresh,
+  List,
+  FloatingBubble,
+  Popup,
+  DatePicker,
+  Picker,
+  Dialog,
+  Toast,
+  Tabbar,
+  TabbarItem,
+  Empty,
+  Checkbox,
+  CheckboxGroup,
+  TimePicker,
+  PickerGroup,
+  Radio,
+  RadioGroup
+]
+
+vantComponents.forEach(component => {
+  app.use(component)
+})
 
 app.use(router)
 app.mount('#app')

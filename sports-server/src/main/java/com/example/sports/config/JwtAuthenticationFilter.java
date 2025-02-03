@@ -69,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         log.debug("设置认证信息 - userId: {}, nickname: {}", userId, nickname);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                nickname,
+                userId.toString(),
                 null,
                 Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
         );

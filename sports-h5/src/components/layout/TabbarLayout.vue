@@ -4,23 +4,18 @@
       <slot></slot>
     </div>
     <van-tabbar route fixed placeholder>
-      <van-tabbar-item replace to="/games" icon="flag-o">赛事</van-tabbar-item>
+      <van-tabbar-item replace to="/tournament" icon="flag-o">赛事</van-tabbar-item>
       <van-tabbar-item replace to="/points" icon="search">查积分</van-tabbar-item>
       <van-tabbar-item replace to="/profile" icon="user-o">我的</van-tabbar-item>
     </van-tabbar>
   </div>
 </template>
 
-<script>
+<script setup>
 import { ref } from 'vue'
+import { Tabbar, TabbarItem } from 'vant'
 
-export default {
-  name: 'TabbarLayout',
-  setup() {
-    const active = ref(0)
-    return { active }
-  }
-}
+const active = ref(0)
 </script>
 
 <style scoped>

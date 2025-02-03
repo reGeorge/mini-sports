@@ -3,14 +3,14 @@ const { defineConfig } = require('@vue/cli-service')
 module.exports = defineConfig({
   transpileDependencies: true,
   devServer: {
-    port: 8080,
+    port: 8081,
     host: '0.0.0.0',
     proxy: {
-      '/api': {
+      '/api': {  // 匹配 /api 开头的请求
         target: 'http://localhost:8088',
         changeOrigin: true,
         pathRewrite: {
-          '^/api': '/api'
+          '^/api': '/api' // 将 /api 替换为 api
         },
         logLevel: 'debug',
         onProxyReq(proxyReq, req) {

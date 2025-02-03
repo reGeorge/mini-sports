@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.TournamentMapper">
+    
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, title, description, start_time, end_time, location, max_players, current_players,
+        status, type, level, entry_fee, created_by, created_at, updated_at
+    </sql>
+
+    <!-- 查询条件 -->
+    <sql id="Query_Condition">
+        <where>
+            <if test="query.keyword != null and query.keyword != ''">
+                AND (title LIKE CONCAT('%', #{query.keyword}, '%')
+                OR description LIKE CONCAT('%', #{query.keyword}, '%'))
+            </if>
+            <if test="query.status != null and query.status != ''">
+                AND status = #{query.status}
+            </if>
+            <if test="query.type != null and query.type != ''">
+                AND type = #{query.type}
+            </if>
+        </where>
+    </sql>
+
+    <!-- 查询列表 -->
+    <select id="selectList" resultType="com.example.sports.entity.Tournament">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM tournament
+        <include refid="Query_Condition"/>
+        ORDER BY created_at DESC
+        LIMIT #{offset}, #{query.pageSize}
+    </select>
+
+    <!-- 查询总数 -->
+    <select id="selectCount" resultType="long">
+        SELECT COUNT(*)
+        FROM tournament
+        <include refid="Query_Condition"/>
+    </select>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultType="com.example.sports.entity.Tournament">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM tournament
+        WHERE id = #{id}
+    </select>
+
+    <!-- 插入数据 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tournament (
+            title, description, start_time, end_time, location, max_players,
+            current_players, status, type, level, entry_fee, created_by,
+            created_at, updated_at
+        )
+        VALUES (
+            #{title}, #{description}, #{startTime}, #{endTime}, #{location},
+            #{maxPlayers}, #{currentPlayers}, #{status}, #{type}, #{level},
+            #{entryFee}, #{createdBy}, #{createdAt}, #{updatedAt}
+        )
+    </insert>
+
+    <!-- 更新数据 -->
+    <update id="update">
+        UPDATE tournament
+        <set>
+            <if test="title != null">title = #{title},</if>
+            <if test="description != null">description = #{description},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="location != null">location = #{location},</if>
+            <if test="maxPlayers != null">max_players = #{maxPlayers},</if>
+            <if test="currentPlayers != null">current_players = #{currentPlayers},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="level != null">level = #{level},</if>
+            <if test="entryFee != null">entry_fee = #{entryFee},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除数据 -->
+    <delete id="deleteById">
+        DELETE FROM tournament WHERE id = #{id}
+    </delete>
+</mapper> 

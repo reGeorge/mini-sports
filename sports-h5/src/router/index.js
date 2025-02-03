@@ -3,17 +3,45 @@ import { createRouter, createWebHistory } from 'vue-router'
 const routes = [
   {
     path: '/',
-    redirect: '/games'
+    redirect: '/tournament'
   },
   {
-    path: '/games',
-    name: 'Games',
-    component: () => import('@/views/games/GameList.vue')
+    path: '/tournament',
+    name: 'TournamentList',
+    component: () => import('@/views/tournament/TournamentList.vue'),
+    meta: { 
+      requiresAuth: false,
+      title: '赛事列表'
+    }
   },
   {
-    path: '/games/:id',
-    name: 'GameDetail',
-    component: () => import('@/views/games/GameDetail.vue')
+    path: '/tournament/detail/:id',
+    name: 'TournamentDetail',
+    component: () => import('@/views/tournament/TournamentDetail.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '赛事详情'
+    }
+  },
+  {
+    path: '/tournament/create',
+    name: 'TournamentCreate',
+    component: () => import('@/views/tournament/TournamentForm.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '创建赛事',
+      permission: 'tournament:create'
+    }
+  },
+  {
+    path: '/tournament/edit/:id',
+    name: 'TournamentEdit',
+    component: () => import('@/views/tournament/TournamentForm.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '编辑赛事',
+      permission: 'tournament:edit'
+    }
   },
   {
     path: '/login',
@@ -65,7 +93,6 @@ const routes = [
     name: 'AdminRegister',
     component: () => import('@/views/admin/AdminRegister.vue')
   }
-  // ... 其他路由配置
 ]
 
 const router = createRouter({
