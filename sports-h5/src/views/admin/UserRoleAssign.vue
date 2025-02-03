@@ -35,8 +35,9 @@
               <van-tag 
                 v-for="role in user.roles" 
                 :key="role.id" 
-                type="primary" 
+                :type="getRoleTagType(role.code)"
                 class="role-tag"
+                size="medium"
               >
                 {{ role.name }}
               </van-tag>
@@ -195,6 +196,17 @@ const onClickLeft = () => {
   router.back()
 }
 
+// 获取角色标签类型
+const getRoleTagType = (roleCode) => {
+  const typeMap = {
+    'ROLE_ADMIN': 'danger',
+    'ROLE_USER': 'primary',
+    'ROLE_REFEREE': 'success',
+    'ROLE_TOURNAMENT_MANAGER': 'warning'
+  }
+  return typeMap[roleCode] || 'primary'
+}
+
 onMounted(() => {
   loadRoles()
 })
@@ -229,12 +241,21 @@ onMounted(() => {
 .current-roles {
   display: flex;
   align-items: center;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 4px;
 }
 
 .role-tag {
-  margin-right: 4px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+:deep(.van-tag) {
+  padding: 0 8px;
+  font-size: 12px;
+  line-height: 20px;
+  border-radius: 4px;
 }
 
 .role-select-dialog {
