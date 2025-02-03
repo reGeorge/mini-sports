@@ -46,7 +46,7 @@ export function assignUserRoles(userId, roleIds) {
   return request({
     url: `/user/${userId}/roles`,
     method: 'put',
-    data: { roleIds }
+    data: roleIds
   })
 }
 

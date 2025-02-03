@@ -2,6 +2,7 @@ package com.example.sports.entity;
 
 import lombok.Data;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class User {
@@ -20,4 +21,5 @@ public class User {
     private String racketConfig;  // 球拍配置
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private List<Role> roles;     // 用户角色列表
 } 

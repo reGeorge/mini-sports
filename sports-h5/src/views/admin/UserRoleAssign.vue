@@ -74,22 +74,18 @@
         </div>
         <div class="dialog-content">
           <van-checkbox-group v-model="selectedRoles">
-            <van-cell-group>
-              <van-cell
-                v-for="role in allRoles"
-                :key="role.id"
-                :title="role.name"
-                clickable
-                @click="toggleRole(role.id)"
-              >
-                <template #right-icon>
-                  <van-checkbox :name="role.id" ref="checkboxRefs" />
-                </template>
-                <template #label>
-                  <span class="role-desc">{{ role.description }}</span>
-                </template>
-              </van-cell>
-            </van-cell-group>
+            <div class="role-list">
+              <div v-for="role in allRoles" :key="role.id" class="role-item">
+                <van-checkbox 
+                  :name="Number(role.id)"
+                >
+                  <div class="role-info">
+                    <span class="role-name">{{ role.name }}</span>
+                    <span class="role-desc">{{ role.description }}</span>
+                  </div>
+                </van-checkbox>
+              </div>
+            </div>
           </van-checkbox-group>
         </div>
         <div class="dialog-footer">
@@ -156,29 +152,34 @@ const onCancel = () => {
 // 显示角色选择
 const showRoleSelect = async (user) => {
   currentUser.value = user
-  selectedRoles.value = user.roles.map(role => role.id)
+  // 确保角色ID是数字类型
+  selectedRoles.value = user.roles.map(role => Number(role.id))
   showRoleDialog.value = true
 }
 
 // 切换角色选择
 const toggleRole = (roleId) => {
-  const index = selectedRoles.value.indexOf(roleId)
+  // 确保roleId是数字类型
+  const numericRoleId = Number(roleId)
+  const index = selectedRoles.value.indexOf(numericRoleId)
   if (index > -1) {
     selectedRoles.value.splice(index, 1)
   } else {
-    selectedRoles.value.push(roleId)
+    selectedRoles.value.push(numericRoleId)
   }
 }
 
 // 保存用户角色
 const saveUserRoles = async () => {
   try {
-    await assignUserRoles(currentUser.value.id, selectedRoles.value)
+    // 确保发送给后端的是数字类型的ID数组
+    const roleIds = selectedRoles.value.map(Number)
+    await assignUserRoles(currentUser.value.id, roleIds)
     showToast('保存成功')
     showRoleDialog.value = false
     // 更新用户的角色显示
     const updatedRoles = allRoles.value.filter(role => 
-      selectedRoles.value.includes(role.id)
+      selectedRoles.value.includes(Number(role.id))
     )
     const userIndex = users.value.findIndex(u => u.id === currentUser.value.id)
     if (userIndex > -1) {
@@ -260,9 +261,46 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+.role-list {
+  padding: 16px;
+}
+
+.role-item {
+  margin-bottom: 16px;
+}
+
+.role-info {
+  display: flex;
+  flex-direction: column;
+  margin-left: 8px;
+}
+
+.role-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
 .role-desc {
   font-size: 12px;
   color: #666;
+  margin-top: 4px;
+}
+
+:deep(.van-checkbox__label) {
+  flex: 1;
+}
+
+:deep(.van-checkbox) {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  padding: 12px;
+  background-color: #f7f8fa;
+  border-radius: 8px;
+}
+
+:deep(.van-checkbox__icon) {
+  margin-top: 2px;
 }
 
 .dialog-footer {

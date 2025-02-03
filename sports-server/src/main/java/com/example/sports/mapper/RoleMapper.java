@@ -36,4 +36,7 @@ public interface RoleMapper {
     
     @Delete("DELETE FROM role_permission WHERE role_id = #{roleId} AND permission_id = #{permissionId}")
     int removePermission(@Param("roleId") Integer roleId, @Param("permissionId") Integer permissionId);
+
+    @Select("SELECT * FROM role WHERE code = #{code}")
+    Role findByCode(String code);
 } 

@@ -4,12 +4,16 @@ import com.example.sports.dto.LoginDTO;
 import com.example.sports.dto.RegisterDTO;
 import com.example.sports.dto.UpdateUserDTO;
 import com.example.sports.entity.User;
+import com.example.sports.entity.Role;
 import com.example.sports.mapper.UserMapper;
+import com.example.sports.mapper.RoleMapper;
 import com.example.sports.service.UserService;
+import com.example.sports.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.util.StringUtils;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +26,16 @@ public class UserServiceImpl implements UserService {
     private UserMapper userMapper;
 
     @Autowired
+    private RoleMapper roleMapper;
+
+    @Autowired
+    private RoleService roleService;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Override
+    @Transactional
     public User register(RegisterDTO registerDTO) {
         // 参数校验
         if (!StringUtils.hasText(registerDTO.getNickname())) {
@@ -38,8 +49,9 @@ public class UserServiceImpl implements UserService {
         }
 
         // 检查用户名是否已存在
-        if (userMapper.findByNickname(registerDTO.getNickname()) != null) {
-            throw new RuntimeException("昵称已存在");
+        User existingUser = findByNickname(registerDTO.getNickname());
+        if (existingUser != null) {
+            throw new RuntimeException("用户名已存在");
         }
 
         // 创建新用户
@@ -61,6 +73,16 @@ public class UserServiceImpl implements UserService {
 
         // 保存用户
         userMapper.insert(user);
+
+        // 为新用户分配ROLE_USER角色
+        Role userRole = roleMapper.findByCode("ROLE_USER");
+        if (userRole != null) {
+            roleService.assignUserRole(user.getId(), userRole.getId());
+            log.info("为新用户 {} 分配普通用户角色", user.getNickname());
+        } else {
+            log.warn("未找到ROLE_USER角色，新用户 {} 未分配角色", user.getNickname());
+        }
+
         return user;
     }
 
@@ -85,6 +107,10 @@ public class UserServiceImpl implements UserService {
         if (user.getStatus() != 1) {
             throw new RuntimeException("账号已被禁用");
         }
+
+        // 加载用户角色
+        user.setRoles(userMapper.findUserRoles(user.getId()));
+        log.info("用户 {} 的角色列表：{}", user.getNickname(), user.getRoles());
 
         return user;
     }

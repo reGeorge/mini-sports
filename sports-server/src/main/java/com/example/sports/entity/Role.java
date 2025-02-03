@@ -9,7 +9,8 @@ import java.util.Set;
 @Data
 public class Role {
     private Integer id;
-    private String name;
+    private String name;        // 显示名称
+    private String code;        // 角色代码，用于权限判断
     private String description;
     private LocalDateTime createdAt;
     

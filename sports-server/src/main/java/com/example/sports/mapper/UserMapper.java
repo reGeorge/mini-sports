@@ -1,6 +1,7 @@
 package com.example.sports.mapper;
 
 import com.example.sports.entity.User;
+import com.example.sports.entity.Role;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
@@ -40,4 +41,12 @@ public interface UserMapper {
     
     @Delete("DELETE FROM user_role WHERE user_id = #{userId} AND role_id = #{roleId}")
     int removeUserRole(@Param("userId") Long userId, @Param("roleId") Integer roleId);
+
+    @Select("SELECT r.* FROM role r " +
+            "INNER JOIN user_role ur ON r.id = ur.role_id " +
+            "WHERE ur.user_id = #{userId}")
+    List<Role> findUserRoles(Long userId);
+
+    @Delete("DELETE FROM user_role WHERE user_id = #{userId}")
+    void deleteByUserId(Long userId);
 } 

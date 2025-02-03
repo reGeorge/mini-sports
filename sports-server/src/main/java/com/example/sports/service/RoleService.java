@@ -19,4 +19,6 @@ public interface RoleService {
     
     void assignUserRole(Long userId, Integer roleId);
     void removeUserRole(Long userId, Integer roleId);
+
+    void updateUserRoles(Long userId, List<Long> roleIds);
 } 

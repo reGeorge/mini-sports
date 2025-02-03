@@ -56,6 +56,29 @@ public class UserController {
         return Result.success(userMapper.findAll());
     }
 
+    @GetMapping("/search")
+    public Result<List<User>> search(@RequestParam String nickname) {
+        log.debug("搜索用户，昵称关键字：{}", nickname);
+        List<User> users = userMapper.searchByNickname(nickname);
+        // 为每个用户加载角色信息
+        users.forEach(user -> user.setRoles(userMapper.findUserRoles(user.getId())));
+        return Result.success(users);
+    }
+
+    @GetMapping("/{userId}/roles")
+    public Result<List<com.example.sports.entity.Role>> getUserRoles(@PathVariable Long userId) {
+        log.debug("获取用户角色，用户ID：{}", userId);
+        List<com.example.sports.entity.Role> roles = userMapper.findUserRoles(userId);
+        return Result.success(roles);
+    }
+
+    @PutMapping("/{userId}/roles")
+    public Result<Void> updateUserRoles(@PathVariable Long userId, @RequestBody List<Long> roleIds) {
+        log.debug("更新用户角色，用户ID：{}，角色IDs：{}", userId, roleIds);
+        roleService.updateUserRoles(userId, roleIds);
+        return Result.success(null);
+    }
+
     @PostMapping("/register")
     public Result<User> register(@Validated @RequestBody RegisterDTO registerDTO) {
         User user = userService.register(registerDTO);

@@ -66,8 +66,14 @@ export default {
         // 存储用户信息和token
         localStorage.setItem('userInfo', JSON.stringify(res.data.user))
         localStorage.setItem('token', res.data.token)
-        // 跳转到个人信息页面
-        router.push('/profile')
+        // 根据用户角色决定跳转页面
+        const userRoles = res.data.user.roles || []
+        const isAdmin = userRoles.some(role => role.code === 'ROLE_ADMIN')
+        if (isAdmin) {
+          router.push('/admin')
+        } else {
+          router.push('/profile')
+        }
       } catch (error) {
         showFailToast(error.response?.data?.message || '登录失败')
       }

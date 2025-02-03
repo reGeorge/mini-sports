@@ -1,48 +1,78 @@
 <template>
   <tabbar-layout>
     <div class="profile">
-      <van-nav-bar title="我的" />
-      
-      <!-- 用户基本信息卡片 -->
-      <div class="user-card">
-        <div class="user-info">
-          <van-image
-            round
-            width="60"
-            height="60"
-            :src="userInfo.avatarUrl || '/images/avatar/fzd.png'"
-          />
-          <div class="user-detail">
-            <div class="nickname">{{ userInfo.nickname }}</div>
-            <div class="view-profile" @click="goToUserDetail">查看资料</div>
+      <div class="profile-content">
+        <van-nav-bar title="我的" />
+        
+        <!-- 用户基本信息卡片 -->
+        <div class="user-card">
+          <div class="user-info">
+            <van-image
+              round
+              width="60"
+              height="60"
+              :src="userInfo.avatarUrl || '/images/avatar/fzd.png'"
+            />
+            <div class="user-detail">
+              <div class="nickname">{{ userInfo.nickname }}</div>
+              <div class="roles">
+                <van-tag 
+                  v-for="role in userInfo.roles" 
+                  :key="role.id"
+                  :type="role.code === 'ROLE_ADMIN' ? 'danger' : 'primary'"
+                  size="small"
+                  class="role-tag"
+                >
+                  {{ role.name }}
+                </van-tag>
+              </div>
+              <div class="view-profile" @click="goToUserDetail">查看资料</div>
+            </div>
+          </div>
+          <div class="points-info">
+            <div class="points-label">积分</div>
+            <div class="points-value">{{ userInfo.points || 0 }} ({{ userInfo.level || 'Y5' }})</div>
           </div>
         </div>
-        <div class="points-info">
-          <div class="points-label">积分</div>
-          <div class="points-value">{{ userInfo.points || 0 }} ({{ userInfo.level || 'Y5' }})</div>
+
+        <!-- 功能按钮区 -->
+        <div class="action-buttons">
+          <van-button block class="action-btn" @click="goToMyEvents">
+            <template #icon>
+              <van-icon name="medal-o" />
+            </template>
+            我参加的赛事
+          </van-button>
+
+          <!-- 管理员控制台入口 -->
+          <van-button 
+            v-if="hasAdminRole" 
+            block 
+            class="action-btn admin-btn" 
+            @click="goToAdminHome"
+          >
+            <template #icon>
+              <van-icon name="setting-o" />
+            </template>
+            管理员控制台
+          </van-button>
         </div>
       </div>
 
-      <!-- 功能按钮区 -->
-      <div class="action-buttons">
-        <van-button block class="action-btn" @click="goToMyEvents">
-          <template #icon>
-            <van-icon name="medal-o" />
-          </template>
-          我参加的赛事
-        </van-button>
+      <!-- 退出登录按钮 -->
+      <div class="logout-wrapper">
+        <van-button type="danger" block @click="handleLogout">退出登录</van-button>
       </div>
-
-    
     </div>
   </tabbar-layout>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import TabbarLayout from '@/components/layout/TabbarLayout.vue'
+import { getUserRoles } from '@/api/user'
 
 export default {
   name: 'Profile',
@@ -52,14 +82,43 @@ export default {
   setup() {
     const router = useRouter()
     const userInfo = ref({})
+    const hasAdminRole = ref(false)
 
-    onMounted(() => {
+    // 检查用户信息和角色的函数
+    const checkUserInfo = async () => {
       const storedUserInfo = localStorage.getItem('userInfo')
       if (storedUserInfo) {
-        userInfo.value = JSON.parse(storedUserInfo)
+        const parsedUserInfo = JSON.parse(storedUserInfo)
+        
+        try {
+          // 从后端重新获取用户的角色信息
+          const rolesRes = await getUserRoles(parsedUserInfo.id)
+          parsedUserInfo.roles = rolesRes.data
+          
+          // 更新 localStorage 中的用户信息
+          localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo))
+          
+          // 更新页面显示
+          userInfo.value = parsedUserInfo
+          const userRoles = parsedUserInfo.roles || []
+          hasAdminRole.value = userRoles.some(role => role.code === 'ROLE_ADMIN')
+        } catch (error) {
+          console.error('获取用户角色失败:', error)
+          showToast('获取用户角色失败')
+        }
       } else {
         router.push('/login')
       }
+    }
+
+    // 页面首次加载时检查
+    onMounted(() => {
+      checkUserInfo()
+    })
+
+    // 每次页面激活时检查
+    onActivated(() => {
+      checkUserInfo()
     })
 
     const goToUserDetail = () => {
@@ -86,6 +145,10 @@ export default {
       showToast('功能开发中')
     }
 
+    const goToAdminHome = () => {
+      router.push('/admin')
+    }
+
     const handleLogout = () => {
       localStorage.removeItem('userInfo')
       localStorage.removeItem('token')
@@ -95,13 +158,15 @@ export default {
 
     return {
       userInfo,
+      hasAdminRole,
       goToUserDetail,
       goToMyEvents,
       goToEventRegister,
       goToNotices,
       goToNoticeDetail,
       goToGroupDetail,
-      handleLogout
+      handleLogout,
+      goToAdminHome
     }
   }
 }
@@ -111,7 +176,13 @@ export default {
 .profile {
   min-height: 100vh;
   background-color: #f7f8fa;
-  padding-bottom: 50px;
+  padding: 16px;
+  padding-bottom: 80px;
+  position: relative;
+}
+
+.profile-content {
+  margin-bottom: 60px;
 }
 
 .user-card {
@@ -133,12 +204,26 @@ export default {
 .nickname {
   font-size: 18px;
   font-weight: bold;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+}
+
+.roles {
+  display: flex;
+  gap: 4px;
+  margin: 4px 0;
+}
+
+.role-tag {
+  font-size: 10px;
+  padding: 0 4px;
+  line-height: 16px;
+  border-radius: 2px;
 }
 
 .view-profile {
   color: #666;
   font-size: 14px;
+  margin-top: 4px;
 }
 
 .points-info {
@@ -206,5 +291,22 @@ export default {
 
 :deep(.van-tabbar-item__icon) {
   font-size: 20px;
+}
+
+.logout-wrapper {
+  position: fixed;
+  bottom: 80px;  /* 留出底部导航栏的空间 */
+  left: 16px;
+  right: 16px;
+  z-index: 10;
+}
+
+:deep(.van-button--danger) {
+  width: 100%;
+}
+
+.admin-btn {
+  background: #1989fa !important;
+  color: white !important;
 }
 </style> 

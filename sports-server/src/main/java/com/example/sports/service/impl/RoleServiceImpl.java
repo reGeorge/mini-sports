@@ -8,12 +8,16 @@ import com.example.sports.service.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class RoleServiceImpl implements RoleService {
+    
+    private static final Logger log = LoggerFactory.getLogger(RoleServiceImpl.class);
     
     @Autowired
     private RoleMapper roleMapper;
@@ -84,5 +88,17 @@ public class RoleServiceImpl implements RoleService {
     @Transactional
     public void removeUserRole(Long userId, Integer roleId) {
         userMapper.removeUserRole(userId, roleId);
+    }
+    
+    @Override
+    @Transactional
+    public void updateUserRoles(Long userId, List<Long> roleIds) {
+        log.debug("更新用户角色，用户ID：{}，角色IDs：{}", userId, roleIds);
+        // 先删除用户所有角色
+        userMapper.deleteByUserId(userId);
+        // 重新分配角色
+        for (Long roleId : roleIds) {
+            assignUserRole(userId, roleId.intValue());  // 转换为Integer
+        }
     }
 } 

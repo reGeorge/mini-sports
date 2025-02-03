@@ -17,7 +17,10 @@ import {
   RadioGroup,
   Search,
   Empty,
-  Popup
+  Popup,
+  Checkbox,
+  CheckboxGroup,
+  Tag
 } from 'vant'
 import 'vant/lib/index.css'
 
@@ -40,6 +43,9 @@ app.use(Button)
    .use(Search)
    .use(Empty)
    .use(Popup)
+   .use(Checkbox)
+   .use(CheckboxGroup)
+   .use(Tag)
 
 app.use(router)
 app.mount('#app')

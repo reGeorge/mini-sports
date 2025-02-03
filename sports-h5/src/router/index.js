@@ -46,6 +46,11 @@ const routes = [
     component: () => import('@/views/points/PointsSearch.vue')
   },
   {
+    path: '/admin',
+    name: 'AdminHome',
+    component: () => import('@/views/admin/AdminHome.vue')
+  },
+  {
     path: '/admin/roles',
     name: 'RoleList',
     component: () => import('@/views/admin/RoleList.vue')
