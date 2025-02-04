@@ -76,10 +76,13 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, Image as VanImage } from 'vant'
 
 export default {
   name: 'UserDetail',
+  components: {
+    VanImage
+  },
   setup() {
     const router = useRouter()
     const formData = ref({

@@ -18,7 +18,6 @@ public class TournamentRegistrationController {
 
     // 获取报名列表
     @GetMapping
-    @PreAuthorize("hasAuthority('tournament:view')")
     public Result<List<TournamentRegistration>> getRegistrations(@PathVariable Long tournamentId) {
         List<TournamentRegistration> registrations = registrationService.getRegistrations(tournamentId);
         return Result.success(registrations);

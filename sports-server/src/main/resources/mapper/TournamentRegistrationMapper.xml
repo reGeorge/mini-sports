@@ -43,7 +43,15 @@
         FROM tournament_registration r
         LEFT JOIN user u ON r.user_id = u.id
         WHERE r.tournament_id = #{tournamentId}
-        ORDER BY r.created_at DESC
+        ORDER BY 
+            CASE r.status
+                WHEN 'PENDING' THEN 1
+                WHEN 'APPROVED' THEN 1
+                WHEN 'WAITLIST' THEN 2
+                WHEN 'REJECTED' THEN 3
+                ELSE 4
+            END,
+            r.created_at ASC
     </select>
     
     <select id="selectByTournamentIdAndUserId" resultMap="RegistrationMap">
@@ -52,6 +60,24 @@
         LEFT JOIN user u ON r.user_id = u.id
         WHERE r.tournament_id = #{tournamentId}
         AND r.user_id = #{userId}
+    </select>
+    
+    <select id="selectFirstWaitlist" resultMap="RegistrationMap">
+        SELECT 
+            r.*,
+            u.id as user_id,
+            u.nickname,
+            u.phone,
+            u.points,
+            u.level,
+            u.grip_style,
+            u.racket_config
+        FROM tournament_registration r
+        LEFT JOIN user u ON r.user_id = u.id
+        WHERE r.tournament_id = #{tournamentId}
+        AND r.status = 'WAITLIST'
+        ORDER BY r.created_at ASC
+        LIMIT 1
     </select>
     
 </mapper> 

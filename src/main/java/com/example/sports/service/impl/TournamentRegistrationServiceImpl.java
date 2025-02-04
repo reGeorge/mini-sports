@@ -59,7 +59,7 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
         TournamentRegistration registration = new TournamentRegistration();
         registration.setTournamentId(tournamentId);
         registration.setUserId(userId);
-        registration.setStatus("PENDING");
+        registration.setStatus("APPROVED");
         registration.setPaymentStatus("UNPAID");
         registration.setCreatedAt(new Date());
         registration.setUpdatedAt(new Date());
@@ -79,11 +79,6 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
         TournamentRegistration registration = registrationMapper.selectByTournamentIdAndUserId(tournamentId, userId);
         if (registration == null) {
             throw new BusinessException("未找到报名记录");
-        }
-        
-        // 检查是否可以取消
-        if (!"PENDING".equals(registration.getStatus())) {
-            throw new BusinessException("当前状态不可取消报名");
         }
         
         // 删除报名记录

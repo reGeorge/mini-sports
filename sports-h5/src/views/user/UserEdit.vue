@@ -67,11 +67,14 @@
 <script>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { showSuccessToast, showFailToast } from 'vant'
+import { showSuccessToast, showFailToast, Image as VanImage } from 'vant'
 import { updateUser } from '@/api/user'
 
 export default {
   name: 'UserEdit',
+  components: {
+    VanImage
+  },
   setup() {
     const router = useRouter()
     const formData = ref({

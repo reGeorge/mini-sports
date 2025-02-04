@@ -18,78 +18,53 @@
       </div>
 
       <!-- 赛事列表 -->
-      <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
-        <van-list
-          v-model:loading="loading"
-          :finished="finished"
-          finished-text="没有更多了"
-          @load="onLoad"
-        >
-          <div class="tournament-items">
-            <van-card
-              v-for="tournament in tournaments"
-              :key="tournament.id"
-              :title="tournament.title"
-              :desc="tournament.description"
-              :thumb="'/images/tournament-default.png'"
-              :thumb-style="{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }"
+      <div class="list-container">
+        <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+          <van-list
+            v-model:loading="loading"
+            :finished="finished"
+            finished-text="没有更多了"
+            @load="onLoad"
+          >
+            <div 
+              v-for="tournament in tournaments" 
+              :key="tournament.id" 
+              class="tournament-card"
+              @click="viewDetail(tournament.id)"
             >
-              <template #thumb>
-                <img :src="`/images/avatar/tournament2.png`" class="tournament-thumb" />
-              </template>
-              <template #tags>
-                <van-tag :type="getStatusType(tournament.status)" class="status-tag">
+              <div class="card-header">
+                <div class="title">{{ tournament.title }}</div>
+                <van-tag :type="getStatusType(tournament.status)" size="medium">
                   {{ getStatusText(tournament.status) }}
                 </van-tag>
-                <van-tag type="primary" class="type-tag">{{ getTypeText(tournament.type) }}</van-tag>
-              </template>
-              <template #bottom>
-                <div class="tournament-info">
-                  <div class="info-item">
-                    <van-icon name="clock-o" />
-                    <span>{{ formatDate(tournament.startTime) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <van-icon name="location-o" />
-                    <span>{{ tournament.location }}</span>
-                  </div>
-                  <div class="info-item">
-                    <van-icon name="friends-o" />
-                    <span>{{ tournament.currentPlayers }}/{{ tournament.maxPlayers }}</span>
-                  </div>
+              </div>
+              
+              <div class="info-list">
+                <div class="info-item">
+                  <van-icon name="clock-o" />
+                  <span class="label">比赛时间：</span>
+                  <span>{{ getDateRange(tournament.startTime, tournament.endTime) }}</span>
                 </div>
-              </template>
-              <template #footer>
-                <div class="card-footer">
-                  <van-button 
-                    size="small" 
-                    type="primary"
-                    @click="viewTournament(tournament)"
-                  >
-                    查看详情
-                  </van-button>
-                  <template v-if="hasPermission('tournament:edit') && tournament.status === 'DRAFT'">
-                    <van-button 
-                      size="small" 
-                      type="info" 
-                      @click="editTournament(tournament)"
-                    >
-                      编辑
-                    </van-button>
-                    <van-button 
-                      size="small" 
-                      type="danger" 
-                      @click="deleteTournament(tournament)"
-                    >
-                      删除
-                    </van-button>
-                  </template>
+                <div class="info-item">
+                  <van-icon name="location-o" />
+                  <span class="label">比赛地点：</span>
+                  <span>{{ tournament.location }}</span>
                 </div>
-              </template>
-            </van-card>
-          </div>
-        </van-list>
-      </van-pull-refresh>
+                <div class="info-item">
+                  <van-icon name="friends-o" />
+                  <span class="label">参与人数：</span>
+                  <span>{{ tournament.currentPlayers }}/{{ tournament.maxPlayers }}</span>
+                </div>
+                <div class="info-item">
+                  <van-icon name="medal-o" />
+                  <span class="label">比赛类型：</span>
+                  <span>{{ getTypeText(tournament.type) }}</span>
+                </div>
+              </div>
+            </div>
+          </van-list>
+        </van-pull-refresh>
+      </div>
 
       <!-- 创建赛事按钮 -->
       <van-floating-bubble 
@@ -111,7 +86,7 @@ import { useRouter } from 'vue-router'
 import { showToast, showDialog } from 'vant'
 import { getTournaments, deleteTournament as deleteTournamentApi } from '@/api/tournament'
 import { hasPermission } from '@/utils/permission'
-import { formatDate } from '@/utils/date'
+import { formatDate, getDateRange } from '@/utils/date'
 import TabbarLayout from '@/components/layout/TabbarLayout.vue'
 
 const router = useRouter()
@@ -246,8 +221,8 @@ watch([statusFilter, typeFilter], () => {
 })
 
 // 查看赛事详情
-const viewTournament = (tournament) => {
-  router.push(`/tournament/detail/${tournament.id}`)
+const viewDetail = (id) => {
+  router.push(`/tournament/detail/${id}`)
 }
 
 // 创建赛事
@@ -287,41 +262,54 @@ onMounted(() => {
 .tournament-list {
   min-height: 100vh;
   background-color: #f7f8fa;
-  padding-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 .search-box {
-  position: sticky;
-  top: 46px;
+  background-color: #fff;
   z-index: 98;
-  background-color: #fff;
 }
 
-.tournament-items {
+.list-container {
+  flex: 1;
+  overflow-y: auto;
   padding: 12px;
-  margin-bottom: 60px;
+  padding-bottom: 80px;
 }
 
-.van-card {
-  margin-bottom: 12px;
-  background-color: #fff;
+.tournament-card {
+  background: white;
   border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.status-tag {
-  margin-right: 4px;
+.tournament-card:active {
+  opacity: 0.8;
+  transform: scale(0.98);
 }
 
-.type-tag {
-  margin-right: 4px;
-}
-
-.tournament-info {
+.card-header {
   display: flex;
-  gap: 16px;
-  margin-top: 8px;
-  font-size: 12px;
-  color: #666;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .info-item {
@@ -330,11 +318,9 @@ onMounted(() => {
   gap: 4px;
 }
 
-.card-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+.label {
+  font-size: 12px;
+  color: #666;
 }
 
 .create-button {
@@ -351,21 +337,10 @@ onMounted(() => {
 }
 
 :deep(.van-nav-bar) {
-  position: sticky;
-  top: 0;
   z-index: 99;
 }
 
 :deep(.van-dropdown-menu) {
-  position: sticky;
-  top: 100px;
   z-index: 98;
-}
-
-.tournament-thumb {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 4px;
 }
 </style> 

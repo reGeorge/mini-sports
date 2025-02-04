@@ -87,4 +87,19 @@
     <delete id="deleteById">
         DELETE FROM tournament WHERE id = #{id}
     </delete>
+
+    <!-- 增加当前参与人数 -->
+    <update id="incrementCurrentPlayers">
+        UPDATE tournament 
+        SET current_players = current_players + 1
+        WHERE id = #{id}
+    </update>
+    
+    <!-- 减少当前参与人数 -->
+    <update id="decrementCurrentPlayers">
+        UPDATE tournament 
+        SET current_players = current_players - 1
+        WHERE id = #{id}
+        AND current_players > 0
+    </update>
 </mapper> 

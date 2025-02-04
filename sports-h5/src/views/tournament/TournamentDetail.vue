@@ -56,15 +56,21 @@
     </div>
 
     <!-- 报名列表 -->
-    <div class="registration-list" v-if="hasPermission('tournament:audit')">
-      <div class="section-title">报名列表</div>
+    <div class="registration-list">
+      <div class="section-title">报名列表 ({{ sortedRegistrations.length }}人)</div>
       <van-cell-group>
         <van-cell
-          v-for="registration in registrations"
+          v-for="(registration, index) in sortedRegistrations"
           :key="registration.id"
-          :title="registration.user.nickname"
-          :label="formatDate(registration.createdAt, 'MM-DD HH:mm')"
+          @click="showUserDetail(registration.user)"
         >
+          <template #icon>
+            <span class="registration-number">{{ index + 1 }}</span>
+          </template>
+          <template #title>
+            <span class="user-name">{{ registration.user.nickname }}</span>
+            <van-tag type="primary" size="small" class="points-tag">{{ registration.user.points || 0 }}分</van-tag>
+          </template>
           <template #right-icon>
             <van-tag :type="getRegistrationStatusType(registration.status)">
               {{ getRegistrationStatusText(registration.status) }}
@@ -74,19 +80,64 @@
       </van-cell-group>
     </div>
 
+    <!-- 用户详情弹窗 -->
+    <van-popup v-model:show="showDetailPopup" round position="bottom" :style="{ height: '80%' }">
+      <div class="detail-popup" v-if="selectedUser">
+        <div class="popup-header">
+          <div class="header-title">详细信息</div>
+          <van-icon name="cross" @click="showDetailPopup = false" />
+        </div>
+        <div class="user-info">
+          <div class="info-row">
+            <span class="label">ID</span>
+            <span class="value">{{ selectedUser.id }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">昵称</span>
+            <span class="value">{{ selectedUser.nickname }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">握拍方式</span>
+            <span class="value">{{ selectedUser.gripStyle || '未设置' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">球拍配置</span>
+            <span class="value">{{ selectedUser.racketConfig || '未设置' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">当前积分</span>
+            <span class="value">{{ selectedUser.points || 0 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">水平级别</span>
+            <span class="value">{{ selectedUser.level || 'BEGINNER' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">参赛场次</span>
+            <span class="value">{{ selectedUser.matchCount || 0 }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">全网排名</span>
+            <span class="value">{{ selectedUser.totalRank || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">胜率</span>
+            <span class="value">{{ selectedUser.winRate ? selectedUser.winRate + '%' : '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">历史最高积分</span>
+            <span class="value">{{ selectedUser.highestPoints || '-' }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">年度平均积分</span>
+            <span class="value">{{ selectedUser.yearlyAveragePoints || '-' }}</span>
+          </div>
+        </div>
+      </div>
+    </van-popup>
+
     <!-- 操作按钮 -->
     <div class="action-bar">
-      <!-- 编辑按钮 -->
-      <template v-if="hasPermission('tournament:edit') && tournament.status === 'DRAFT'">
-        <van-button 
-          type="info" 
-          block 
-          @click="editTournament"
-        >
-          编辑赛事
-        </van-button>
-      </template>
-
       <!-- 状态操作按钮 -->
       <template v-if="hasPermission('tournament:edit')">
         <van-button 
@@ -115,6 +166,28 @@
         </van-button>
       </template>
 
+      <!-- 编辑按钮 -->
+      <template v-if="hasPermission('tournament:edit') && tournament.status === 'DRAFT'">
+        <van-button 
+          type="default" 
+          block 
+          @click="editTournament"
+        >
+          编辑赛事
+        </van-button>
+      </template>
+
+      <!-- 删除按钮 -->
+      <template v-if="hasPermission('tournament:delete') && tournament.status === 'DRAFT'">
+        <van-button 
+          type="danger" 
+          block 
+          @click="deleteTournament"
+        >
+          删除赛事
+        </van-button>
+      </template>
+
       <!-- 报名按钮 -->
       <van-button 
         v-if="tournament.status === 'REGISTERING' && !isRegistered"
@@ -127,7 +200,7 @@
 
       <!-- 取消报名按钮 -->
       <van-button 
-        v-if="tournament.status === 'REGISTERING' && isRegistered && myRegistration?.status === 'PENDING'"
+        v-if="tournament.status === 'REGISTERING' && isRegistered"
         type="danger" 
         block 
         @click="cancelRegistration"
@@ -144,7 +217,7 @@
       @confirm="confirmRegister"
     >
       <div class="register-dialog-content">
-        <p>确认报名参加该赛事吗？</p>
+        <p>{{ tournament.currentPlayers >= tournament.maxPlayers ? '当前报名人数已满，您将进入候补名单，是否继续？' : '确认报名参加该赛事吗？' }}</p>
         <p class="fee-info" v-if="tournament.entryFee > 0">
           需支付报名费：{{ tournament.entryFee }}元
         </p>
@@ -154,10 +227,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { getTournamentById, updateTournamentStatus } from '@/api/tournament'
+import { getTournamentById, updateTournamentStatus, deleteTournament as deleteTournamentApi } from '@/api/tournament'
 import { getRegistrations, register as registerApi, cancelRegistration as cancelRegistrationApi } from '@/api/registration'
 import { hasPermission } from '@/utils/permission'
 import { formatDate, getDateRange } from '@/utils/date'
@@ -169,6 +242,8 @@ const registrations = ref([])
 const showRegisterDialog = ref(false)
 const isRegistered = ref(false)
 const myRegistration = ref(null)
+const showDetailPopup = ref(false)
+const selectedUser = ref(null)
 
 // 获取当前用户ID
 const getCurrentUserId = () => {
@@ -215,17 +290,47 @@ const onClickLeft = () => {
 // 更新赛事状态
 const updateStatus = async (status) => {
   try {
+    const statusTextMap = {
+      'REGISTERING': '开始报名',
+      'ONGOING': '开始比赛',
+      'FINISHED': '结束比赛'
+    }
+    
+    await showDialog({
+      title: '确认操作',
+      message: `确定要${statusTextMap[status]}吗？`,
+      showCancelButton: true,
+    })
+    
     await updateTournamentStatus(tournament.value.id, status)
     showToast('状态更新成功')
     await loadTournament()
   } catch (error) {
+    if (error === 'cancel') return
     showToast('状态更新失败')
   }
 }
 
 // 报名
-const register = () => {
-  showRegisterDialog.value = true
+const register = async () => {
+  const message = tournament.value.currentPlayers >= tournament.value.maxPlayers
+    ? '当前报名人数已满，您将进入候补名单，是否继续？'
+    : '确认报名参加该赛事吗？'
+    
+  if (tournament.value.entryFee > 0) {
+    showRegisterDialog.value = true
+  } else {
+    try {
+      await showDialog({
+        title: '报名确认',
+        message: message,
+        showCancelButton: true,
+      })
+      await confirmRegister()
+    } catch (error) {
+      if (error === 'cancel') return
+    }
+  }
 }
 
 // 确认报名
@@ -244,7 +349,8 @@ const cancelRegistration = async () => {
   try {
     await showDialog({
       title: '确认取消',
-      message: '确定要取消报名吗？',
+      message: '确定要取消报名吗？取消后如需参加需要重新报名。',
+      showCancelButton: true,
     })
     
     await cancelRegistrationApi(tournament.value.id)
@@ -293,29 +399,72 @@ const getLevelText = (level) => {
   return level === '0' ? '无限制' : `${level}分`
 }
 
-// 获取报名状态样式
-const getRegistrationStatusType = (status) => {
-  const typeMap = {
-    'PENDING': 'warning',
-    'APPROVED': 'success',
-    'REJECTED': 'danger'
-  }
-  return typeMap[status] || 'default'
-}
-
 // 获取报名状态文本
 const getRegistrationStatusText = (status) => {
   const textMap = {
-    'PENDING': '待审核',
-    'APPROVED': '已通过',
-    'REJECTED': '已拒绝'
+    'PENDING': '已报名',
+    'APPROVED': '已报名',
+    'REJECTED': '已拒绝',
+    'WAITLIST': '候补中'
   }
   return textMap[status] || status
 }
 
+// 获取报名状态样式
+const getRegistrationStatusType = (status) => {
+  const typeMap = {
+    'PENDING': 'success',
+    'APPROVED': 'success',
+    'REJECTED': 'danger',
+    'WAITLIST': 'warning'
+  }
+  return typeMap[status] || 'default'
+}
+
 // 编辑赛事
-const editTournament = () => {
-  router.push(`/tournament/edit/${tournament.value.id}`)
+const editTournament = async () => {
+  try {
+    await showDialog({
+      title: '确认编辑',
+      message: '确定要编辑该赛事吗？',
+      showCancelButton: true,
+    })
+    
+    router.push(`/tournament/edit/${tournament.value.id}`)
+  } catch (error) {
+    if (error === 'cancel') return
+  }
+}
+
+// 按积分降序排序的报名列表
+const sortedRegistrations = computed(() => {
+  return [...registrations.value].sort((a, b) => {
+    return (b.user?.points || 0) - (a.user?.points || 0)
+  })
+})
+
+// 删除赛事
+const deleteTournament = async () => {
+  try {
+    await showDialog({
+      title: '确认删除',
+      message: `确定要删除赛事"${tournament.value.title}"吗？删除后无法恢复。`,
+      showCancelButton: true,
+    })
+    
+    await deleteTournamentApi(tournament.value.id)
+    showToast('删除成功')
+    router.back()
+  } catch (error) {
+    if (error === 'cancel') return
+    showToast('删除失败')
+  }
+}
+
+// 显示用户详情
+const showUserDetail = (user) => {
+  selectedUser.value = user
+  showDetailPopup.value = true
 }
 
 // 组件挂载时加载数据
@@ -409,6 +558,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  z-index: 99;
 }
 
 .register-dialog-content {
@@ -419,5 +569,85 @@ onMounted(async () => {
 .fee-info {
   color: var(--van-danger-color);
   margin-top: 8px;
+}
+
+.registration-number {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  line-height: 24px;
+  text-align: center;
+  background-color: #f2f2f2;
+  border-radius: 12px;
+  margin-right: 8px;
+  font-size: 14px;
+  color: #666;
+}
+
+.user-name {
+  margin-right: 8px;
+  font-weight: bold;
+}
+
+.points-tag {
+  font-size: 12px;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+.action-bar :deep(.van-button--default) {
+  background-color: #f5f5f5;
+  border: 1px solid #dcdee0;
+}
+
+.detail-popup {
+  padding: 20px;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.header-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.user-info {
+  overflow-y: auto;
+  max-height: calc(70vh - 60px);
+}
+
+.info-row {
+  display: flex;
+  padding: 12px 0;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.info-row .label {
+  width: 100px;
+  color: #666;
+}
+
+.info-row .value {
+  flex: 1;
+  color: #333;
+}
+
+:deep(.van-collapse-item__title) {
+  padding-top: 0;
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 0;
+}
+
+:deep(.van-cell) {
+  align-items: center;
 }
 </style> 

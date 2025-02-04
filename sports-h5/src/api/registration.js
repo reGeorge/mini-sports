@@ -11,7 +11,7 @@ export function getRegistrations(tournamentId) {
 // 报名赛事
 export function register(tournamentId) {
   return request({
-    url: `/tournaments/${tournamentId}/register`,
+    url: `/tournaments/${tournamentId}/registrations/register`,
     method: 'post'
   })
 }
@@ -19,7 +19,7 @@ export function register(tournamentId) {
 // 取消报名
 export function cancelRegistration(tournamentId) {
   return request({
-    url: `/tournaments/${tournamentId}/register`,
+    url: `/tournaments/${tournamentId}/registrations/register`,
     method: 'delete'
   })
 }

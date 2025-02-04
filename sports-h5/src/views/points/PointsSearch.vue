@@ -1,44 +1,44 @@
 <template>
   <tabbar-layout>
     <div class="points-search">
-      <van-nav-bar title="积分查询" />
+      <van-nav-bar title="查积分" />
       
       <!-- 搜索框 -->
       <div class="search-box">
         <van-search
           v-model="searchValue"
-          placeholder="请输入姓名搜索"
+          placeholder="搜索用户"
           @search="onSearch"
           shape="round"
-          show-action
-          @cancel="onCancel"
         />
       </div>
 
       <!-- 搜索结果列表 -->
-      <div class="search-results" v-if="searchResults.length > 0">
-        <div class="result-item" v-for="item in searchResults" :key="item.id" @click="showDetail(item)">
-          <div class="item-header">
-            <span class="rank-number">{{ item.rank }}</span>
-            <span class="player-name">{{ item.nickname }}</span>
-            <span class="player-gender">{{ item.gender }}</span>
-          </div>
-          <div class="item-body">
-            <div class="points-info">
-              <span class="points">{{ item.points }}</span>
-              <span class="level">{{ item.level }}</span>
+      <div class="list-container">
+        <div class="search-results" v-if="searchResults.length > 0">
+          <div class="result-item" v-for="item in searchResults" :key="item.id" @click="showDetail(item)">
+            <div class="item-header">
+              <span class="rank-number">{{ item.rank }}</span>
+              <span class="player-name">{{ item.nickname }}</span>
+              <span class="player-gender">{{ item.gender }}</span>
             </div>
-            <div class="rank-info">
-              <span class="total-rank">总排名: {{ item.totalRank }}</span>
-              <span class="match-count">场次: {{ item.matchCount }}</span>
+            <div class="item-body">
+              <div class="points-info">
+                <span class="points">{{ item.points }}</span>
+                <span class="level">{{ item.level }}</span>
+              </div>
+              <div class="rank-info">
+                <span class="total-rank">总排名: {{ item.totalRank }}</span>
+                <span class="match-count">场次: {{ item.matchCount }}</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 无搜索结果提示 -->
-      <div class="no-result" v-else-if="hasSearched">
-        <van-empty description="未找到相关用户" />
+        <!-- 无搜索结果提示 -->
+        <div class="no-result" v-else-if="hasSearched">
+          <van-empty description="未找到相关用户" />
+        </div>
       </div>
 
       <!-- 用户详情弹窗 -->
@@ -162,15 +162,21 @@ export default {
 .points-search {
   min-height: 100vh;
   background-color: #f7f8fa;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
 .search-box {
-  padding: 8px 0;
-  background: #fff;
+  background-color: #fff;
+  z-index: 98;
 }
 
-.search-results {
+.list-container {
+  flex: 1;
+  overflow-y: auto;
   padding: 12px;
+  padding-bottom: 80px;
 }
 
 .result-item {

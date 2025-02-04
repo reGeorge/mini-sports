@@ -1,10 +1,10 @@
 <template>
   <tabbar-layout>
     <div class="profile">
-      <div class="profile-content">
-        <van-nav-bar title="我的" />
-        
-        <!-- 用户基本信息卡片 -->
+      <van-nav-bar title="我的" />
+      
+      <div class="list-container">
+        <!-- 用户信息卡片 -->
         <div class="user-card">
           <div class="user-info">
             <van-image
@@ -35,7 +35,7 @@
           </div>
         </div>
 
-        <!-- 功能按钮区 -->
+        <!-- 操作按钮 -->
         <div class="action-buttons">
           <van-button block class="action-btn" @click="goToMyEvents">
             <template #icon>
@@ -70,7 +70,7 @@
 <script>
 import { ref, onMounted, onActivated } from 'vue'
 import { useRouter } from 'vue-router'
-import { showToast } from 'vant'
+import { showToast, Image as VanImage } from 'vant'
 import TabbarLayout from '@/components/layout/TabbarLayout.vue'
 import { getUserRoles } from '@/api/user'
 import { getUserPermissions } from '@/api/permission'
@@ -79,7 +79,8 @@ import { hasRole, hasPermission } from '@/utils/permission'
 export default {
   name: 'Profile',
   components: {
-    TabbarLayout
+    TabbarLayout,
+    VanImage
   },
   setup() {
     const router = useRouter()
@@ -182,19 +183,24 @@ export default {
 .profile {
   min-height: 100vh;
   background-color: #f7f8fa;
-  padding: 16px;
-  padding-bottom: 80px;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
 }
 
-.profile-content {
-  margin-bottom: 60px;
+.list-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  padding-bottom: 80px;
 }
 
 .user-card {
   background: white;
+  border-radius: 8px;
   padding: 20px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .user-info {

@@ -22,4 +22,9 @@ public interface TournamentRegistrationMapper {
     
     // 根据赛事ID和用户ID查询报名记录
     TournamentRegistration selectByTournamentIdAndUserId(@Param("tournamentId") Long tournamentId, @Param("userId") Long userId);
+
+    /**
+     * 获取赛事中最早的候补报名记录
+     */
+    TournamentRegistration selectFirstWaitlist(Long tournamentId);
 } 

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.UserMapper">
+    <!-- 根据ID查询用户 -->
+    <select id="selectById" resultType="com.example.sports.entity.User">
+        SELECT 
+            id,
+            nickname,
+            phone,
+            avatar_url,
+            points,
+            level,
+            grip_style,
+            racket_config,
+            created_at,
+            updated_at
+        FROM user
+        WHERE id = #{id}
+    </select>
+</mapper> 

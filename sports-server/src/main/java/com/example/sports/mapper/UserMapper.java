@@ -49,4 +49,7 @@ public interface UserMapper {
 
     @Delete("DELETE FROM user_role WHERE user_id = #{userId}")
     void deleteByUserId(Long userId);
+
+    // 根据ID查询用户
+    User selectById(Long id);
 } 

@@ -2,9 +2,11 @@ package com.example.sports.service.impl;
 
 import com.example.sports.entity.Tournament;
 import com.example.sports.entity.TournamentRegistration;
+import com.example.sports.entity.User;
 import com.example.sports.exception.BusinessException;
 import com.example.sports.mapper.TournamentMapper;
 import com.example.sports.mapper.TournamentRegistrationMapper;
+import com.example.sports.mapper.UserMapper;
 import com.example.sports.service.TournamentRegistrationService;
 import com.example.sports.utils.SecurityUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,10 +25,21 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
 
     @Autowired
     private TournamentMapper tournamentMapper;
+    
+    @Autowired
+    private UserMapper userMapper;
 
     @Override
     public List<TournamentRegistration> getRegistrations(Long tournamentId) {
-        return registrationMapper.selectByTournamentId(tournamentId);
+        List<TournamentRegistration> registrations = registrationMapper.selectByTournamentId(tournamentId);
+        // 实时查询每个用户的最新信息
+        for (TournamentRegistration registration : registrations) {
+            if (registration.getUser() != null) {
+                User latestUser = userMapper.selectById(registration.getUser().getId());
+                registration.setUser(latestUser);
+            }
+        }
+        return registrations;
     }
 
     @Override
@@ -44,11 +57,6 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
             throw new BusinessException("赛事不在报名阶段");
         }
         
-        // 检查是否已达到最大参与人数
-        if (tournament.getCurrentPlayers() >= tournament.getMaxPlayers()) {
-            throw new BusinessException("报名人数已满");
-        }
-        
         // 检查是否已经报名
         TournamentRegistration existingRegistration = registrationMapper.selectByTournamentIdAndUserId(tournamentId, userId);
         if (existingRegistration != null) {
@@ -59,15 +67,20 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
         TournamentRegistration registration = new TournamentRegistration();
         registration.setTournamentId(tournamentId);
         registration.setUserId(userId);
-        registration.setStatus("PENDING");
-        registration.setPaymentStatus("UNPAID");
         registration.setCreatedAt(new Date());
         registration.setUpdatedAt(new Date());
+        registration.setPaymentStatus("UNPAID");
+        
+        // 检查是否需要进入候补
+        if (tournament.getCurrentPlayers() >= tournament.getMaxPlayers()) {
+            registration.setStatus("WAITLIST");
+        } else {
+            registration.setStatus("PENDING");
+            // 只有正式报名才增加当前参与人数
+            tournamentMapper.incrementCurrentPlayers(tournamentId);
+        }
         
         registrationMapper.insert(registration);
-        
-        // 更新参与人数
-        tournamentMapper.incrementCurrentPlayers(tournamentId);
     }
 
     @Override
@@ -82,15 +95,42 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
         }
         
         // 检查是否可以取消
-        if (!"PENDING".equals(registration.getStatus())) {
+        if (!Arrays.asList("PENDING", "WAITLIST").contains(registration.getStatus())) {
             throw new BusinessException("当前状态不可取消报名");
         }
         
         // 删除报名记录
         registrationMapper.deleteById(registration.getId());
         
-        // 更新参与人数
-        tournamentMapper.decrementCurrentPlayers(tournamentId);
+        // 如果是正式报名状态，则减少参与人数并处理候补
+        if ("PENDING".equals(registration.getStatus())) {
+            tournamentMapper.decrementCurrentPlayers(tournamentId);
+            // 处理候补队列
+            processWaitlist(tournamentId);
+        }
+    }
+
+    /**
+     * 处理候补队列
+     */
+    private void processWaitlist(Long tournamentId) {
+        // 获取赛事信息
+        Tournament tournament = tournamentMapper.selectById(tournamentId);
+        if (tournament == null || tournament.getCurrentPlayers() >= tournament.getMaxPlayers()) {
+            return;
+        }
+
+        // 获取最早候补的报名记录
+        TournamentRegistration waitlistRegistration = registrationMapper.selectFirstWaitlist(tournamentId);
+        if (waitlistRegistration != null) {
+            // 更新状态为正式报名
+            waitlistRegistration.setStatus("PENDING");
+            waitlistRegistration.setUpdatedAt(new Date());
+            registrationMapper.updateById(waitlistRegistration);
+            
+            // 增加当前参与人数
+            tournamentMapper.incrementCurrentPlayers(tournamentId);
+        }
     }
 
     @Override
