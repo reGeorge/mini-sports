@@ -48,6 +48,6 @@ export function updateTournamentStatus(id, status) {
   return request({
     url: `/tournaments/${id}/status`,
     method: 'put',
-    data: { status }
+    params: { status }
   })
 } 

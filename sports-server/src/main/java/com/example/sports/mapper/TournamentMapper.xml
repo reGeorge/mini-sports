@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.TournamentMapper">
+    <update id="incrementCurrentPlayers">
+        UPDATE tournament 
+        SET current_players = current_players + 1
+        WHERE id = #{id}
+    </update>
+    
+    <update id="decrementCurrentPlayers">
+        UPDATE tournament 
+        SET current_players = current_players - 1
+        WHERE id = #{id}
+        AND current_players > 0
+    </update>
+</mapper> 

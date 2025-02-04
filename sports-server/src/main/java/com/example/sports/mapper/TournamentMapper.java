@@ -38,4 +38,14 @@ public interface TournamentMapper {
      * 删除数据
      */
     int deleteById(@Param("id") Long id);
+
+    /**
+     * 增加当前参与人数
+     */
+    int incrementCurrentPlayers(@Param("id") Long id);
+
+    /**
+     * 减少当前参与人数
+     */
+    int decrementCurrentPlayers(@Param("id") Long id);
 } 

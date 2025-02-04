@@ -39,8 +39,8 @@
         </div>
         <div class="info-item">
           <van-icon name="award-o" />
-          <span class="label">赛事级别：</span>
-          <span>{{ getLevelText(tournament.level) }}</span>
+          <span class="label">积分上限：</span>
+          <span>{{ tournament.level === '0' ? '无限制' : tournament.level }}</span>
         </div>
         <div class="info-item">
           <van-icon name="gold-coin-o" />
@@ -160,7 +160,7 @@ import { showToast, showDialog } from 'vant'
 import { getTournamentById, updateTournamentStatus } from '@/api/tournament'
 import { getRegistrations, register as registerApi, cancelRegistration as cancelRegistrationApi } from '@/api/registration'
 import { hasPermission } from '@/utils/permission'
-import { formatDate } from '@/utils/date'
+import { formatDate, getDateRange } from '@/utils/date'
 
 const router = useRouter()
 const route = useRoute()
@@ -170,11 +170,18 @@ const showRegisterDialog = ref(false)
 const isRegistered = ref(false)
 const myRegistration = ref(null)
 
+// 获取当前用户ID
+const getCurrentUserId = () => {
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}')
+  return userInfo.id
+}
+
 // 获取赛事详情
 const loadTournament = async () => {
   try {
     const res = await getTournamentById(route.params.id)
     tournament.value = res.data
+    await loadRegistrations() // 加载报名列表
   } catch (error) {
     showToast('获取赛事信息失败')
     router.back()
@@ -183,14 +190,69 @@ const loadTournament = async () => {
 
 // 获取报名列表
 const loadRegistrations = async () => {
+  if (!hasPermission('tournament:view')) return
+  
   try {
     const res = await getRegistrations(route.params.id)
     registrations.value = res.data
+    const userId = getCurrentUserId()
     // 查找当前用户的报名记录
-    myRegistration.value = registrations.value.find(r => r.userId === getCurrentUserId())
-    isRegistered.value = myRegistration.value != null
+    if (userId) {
+      myRegistration.value = registrations.value.find(r => r.userId === userId)
+      isRegistered.value = !!myRegistration.value
+    }
   } catch (error) {
+    console.error('获取报名列表失败:', error)
     showToast('获取报名列表失败')
+  }
+}
+
+// 返回上一页
+const onClickLeft = () => {
+  router.back()
+}
+
+// 更新赛事状态
+const updateStatus = async (status) => {
+  try {
+    await updateTournamentStatus(tournament.value.id, status)
+    showToast('状态更新成功')
+    await loadTournament()
+  } catch (error) {
+    showToast('状态更新失败')
+  }
+}
+
+// 报名
+const register = () => {
+  showRegisterDialog.value = true
+}
+
+// 确认报名
+const confirmRegister = async () => {
+  try {
+    await registerApi(tournament.value.id)
+    showToast('报名成功')
+    await loadRegistrations()
+  } catch (error) {
+    showToast('报名失败')
+  }
+}
+
+// 取消报名
+const cancelRegistration = async () => {
+  try {
+    await showDialog({
+      title: '确认取消',
+      message: '确定要取消报名吗？',
+    })
+    
+    await cancelRegistrationApi(tournament.value.id)
+    showToast('取消报名成功')
+    await loadRegistrations()
+  } catch (error) {
+    if (error === 'cancel') return
+    showToast('取消报名失败')
   }
 }
 
@@ -228,12 +290,7 @@ const getTypeText = (type) => {
 
 // 获取级别文本
 const getLevelText = (level) => {
-  const textMap = {
-    'BEGINNER': '新手级',
-    'AMATEUR': '业余级',
-    'PROFESSIONAL': '专业级'
-  }
-  return textMap[level] || level
+  return level === '0' ? '无限制' : `${level}分`
 }
 
 // 获取报名状态样式
@@ -261,58 +318,9 @@ const editTournament = () => {
   router.push(`/tournament/edit/${tournament.value.id}`)
 }
 
-// 更新状态
-const updateStatus = async (status) => {
-  try {
-    await updateTournamentStatus(tournament.value.id, status)
-    showToast('更新成功')
-    loadTournament()
-  } catch (error) {
-    showToast('更新失败')
-  }
-}
-
-// 报名
-const register = () => {
-  showRegisterDialog.value = true
-}
-
-// 确认报名
-const confirmRegister = async () => {
-  try {
-    await registerApi(tournament.value.id)
-    showToast('报名成功')
-    loadRegistrations()
-  } catch (error) {
-    showToast('报名失败')
-  }
-}
-
-// 取消报名
-const cancelRegistration = async () => {
-  showDialog({
-    title: '确认取消',
-    message: '确定要取消报名吗？',
-    showCancelButton: true
-  }).then(async () => {
-    try {
-      await cancelRegistrationApi(tournament.value.id)
-      showToast('取消成功')
-      loadRegistrations()
-    } catch (error) {
-      showToast('取消失败')
-    }
-  })
-}
-
-// 返回
-const onClickLeft = () => {
-  router.back()
-}
-
-onMounted(() => {
-  loadTournament()
-  loadRegistrations()
+// 组件挂载时加载数据
+onMounted(async () => {
+  await loadTournament()
 })
 </script>
 

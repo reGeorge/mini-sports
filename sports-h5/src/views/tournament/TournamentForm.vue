@@ -80,8 +80,8 @@
           </van-field>
           
           <van-field
-            v-model="formData.maxPoints"
-            name="maxPoints"
+            v-model="formData.level"
+            name="level"
             label="积分上限"
             type="digit"
             placeholder="请输入参赛积分上限（0表示无限制）"
@@ -142,7 +142,7 @@ const formData = ref({
   location: '',
   maxPlayers: '16',
   type: 'SINGLES',
-  maxPoints: '0',
+  level: '0',
   entryFee: '30'
 })
 
@@ -162,7 +162,7 @@ const onSubmit = async (values) => {
       ...values,
       startTime,
       maxPlayers: parseInt(values.maxPlayers),
-      maxPoints: parseInt(values.maxPoints),
+      level: parseInt(values.level),
       entryFee: parseFloat(values.entryFee)
     }
     

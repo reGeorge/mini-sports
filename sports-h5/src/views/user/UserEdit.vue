@@ -16,7 +16,7 @@
           round
           width="80"
           height="80"
-          :src="formData.avatarUrl || '/images/avatar/fzd.png'"
+          src="/images/avatar/fzd.png"
         />
       </div>
 

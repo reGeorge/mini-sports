@@ -10,7 +10,7 @@ module.exports = defineConfig({
         target: 'http://localhost:8088',
         changeOrigin: true,
         pathRewrite: {
-          '^/api': '/api' // 将 /api 替换为 api
+          '^/api': ''  // 移除 /api 前缀（后端定义的接口不带/api前缀）
         },
         logLevel: 'debug',
         onProxyReq(proxyReq, req) {

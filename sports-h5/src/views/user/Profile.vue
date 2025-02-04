@@ -11,7 +11,7 @@
               round
               width="60"
               height="60"
-              :src="userInfo.avatarUrl || '/images/avatar/fzd.png'"
+              src="/images/avatar/fzd.png"
             />
             <div class="user-detail">
               <div class="nickname">{{ userInfo.nickname }}</div>

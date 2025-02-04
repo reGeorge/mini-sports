@@ -62,26 +62,10 @@ export function getDaysBetween(startDate, endDate) {
   return dayjs(endDate).diff(dayjs(startDate), 'day')
 }
 
-// 获取日期范围
-export function getDateRange(startDate, endDate, format) {
-  if (!startDate || !endDate) return ''
-  
-  // 如果提供了format参数，返回日期数组
-  if (format) {
-    const dates = []
-    let currentDate = dayjs(startDate)
-    const lastDate = dayjs(endDate)
-
-    while (currentDate.isBefore(lastDate) || currentDate.isSame(lastDate, 'day')) {
-      dates.push(currentDate.format(format))
-      currentDate = currentDate.add(1, 'day')
-    }
-
-    return dates
-  }
-  
-  // 否则返回格式化的日期范围字符串
-  return `${formatDate(startDate, 'MM-DD HH:mm')} 至 ${formatDate(endDate, 'MM-DD HH:mm')}`
+// 格式化日期范围
+export function getDateRange(startTime, endTime, format = 'MM-DD HH:mm') {
+  if (!startTime || !endTime) return ''
+  return `${formatDate(startTime, format)} 至 ${formatDate(endTime, format)}`
 }
 
 // 判断日期是否在范围内

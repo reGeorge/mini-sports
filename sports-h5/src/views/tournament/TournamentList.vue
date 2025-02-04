@@ -32,12 +32,16 @@
               :title="tournament.title"
               :desc="tournament.description"
               :thumb="'/images/tournament-default.png'"
+              :thumb-style="{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '4px' }"
             >
+              <template #thumb>
+                <img :src="`/images/avatar/tournament2.png`" class="tournament-thumb" />
+              </template>
               <template #tags>
                 <van-tag :type="getStatusType(tournament.status)" class="status-tag">
                   {{ getStatusText(tournament.status) }}
                 </van-tag>
-                <van-tag type="primary" class="type-tag">{{ tournament.type }}</van-tag>
+                <van-tag type="primary" class="type-tag">{{ getTypeText(tournament.type) }}</van-tag>
               </template>
               <template #bottom>
                 <div class="tournament-info">
@@ -158,6 +162,21 @@ const getStatusText = (status) => {
     'FINISHED': '已结束'
   }
   return textMap[status] || status
+}
+
+// 获取随机数
+const getRandomNumber = (min, max) => {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+// 获取类型文本
+const getTypeText = (type) => {
+  const textMap = {
+    'SINGLES': '单打',
+    'DOUBLES': '双打',
+    'TEAM': '团体'
+  }
+  return textMap[type] || type
 }
 
 // 加载赛事列表
@@ -341,5 +360,12 @@ onMounted(() => {
   position: sticky;
   top: 100px;
   z-index: 98;
+}
+
+.tournament-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 4px;
 }
 </style> 
