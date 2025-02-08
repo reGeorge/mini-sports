@@ -94,4 +94,53 @@ CREATE TABLE `tournament_registration` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_tournament_user` (`tournament_id`,`user_id`),
   KEY `idx_tournament_status` (`tournament_id`,`status`,`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='赛事报名表'; 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='赛事报名表';
+
+-- 积分规则表
+CREATE TABLE `points_rule` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '规则ID',
+  `type` varchar(50) NOT NULL COMMENT '规则类型(GAIN-获取,COST-消耗)',
+  `action` varchar(50) NOT NULL COMMENT '行为编码',
+  `name` varchar(100) NOT NULL COMMENT '规则名称',
+  `points_min_diff` int NOT NULL DEFAULT '0' COMMENT '最小积分差值',
+  `points_max_diff` int NOT NULL DEFAULT '0' COMMENT '最大积分差值',
+  `win_points` int NOT NULL DEFAULT '0' COMMENT '胜者获得积分',
+  `lose_points` int NOT NULL DEFAULT '0' COMMENT '败者失去积分',
+  `description` varchar(200) DEFAULT NULL COMMENT '规则描述',
+  `status` tinyint NOT NULL DEFAULT '1' COMMENT '状态：0-禁用 1-正常',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_action` (`action`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分规则表';
+
+-- 积分记录表
+CREATE TABLE `points_record` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `rule_id` bigint NOT NULL COMMENT '规则ID',
+  `type` varchar(50) NOT NULL COMMENT '类型(GAIN-获取,COST-消耗)',
+  `points` int NOT NULL COMMENT '积分值',
+  `balance` int NOT NULL COMMENT '变更后余额',
+  `description` varchar(200) DEFAULT NULL COMMENT '变更说明',
+  `ref_id` bigint DEFAULT NULL COMMENT '关联业务ID',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_rule_id` (`rule_id`),
+  KEY `idx_ref_id` (`ref_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分记录表';
+
+-- 积分等级表
+CREATE TABLE `points_level` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '等级ID',
+  `code` varchar(50) NOT NULL COMMENT '等级编码',
+  `name` varchar(100) NOT NULL COMMENT '等级名称',
+  `min_points` int NOT NULL COMMENT '最小积分',
+  `max_points` int NOT NULL COMMENT '最大积分',
+  `description` varchar(200) DEFAULT NULL COMMENT '等级说明',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='积分等级表';
