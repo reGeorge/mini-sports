@@ -10,5 +10,6 @@
     },
     "editor.formatOnSave": false,
     "editor.minimap.enabled": false,
-    "workbench.editor.enablePreview": false
-} 
+    "workbench.editor.enablePreview": false,
+    "workbench.panel.defaultLocation": "right"
+}

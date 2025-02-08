@@ -115,107 +115,70 @@
   </div>
 </template>
 
-<script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { showToast } from 'vant'
-import { createTournament, getTournamentById, updateTournament } from '@/api/tournament'
-import { formatDate } from '@/utils/date'
+<script>
+export default {
+  name: 'TournamentForm',
+  data() {
+    return {
+      isEdit: false,
+      formData: {
+        title: '',
+        description: `赛事信息：
 
-const router = useRouter()
-const route = useRoute()
-const isEdit = computed(() => !!route.params.id)
+比赛赛制：三局两胜
+参赛人数：60
+替补人数：24
+分组数量：12
+每组出线人数：4
+淘汰赛对阵：默认对阵
 
-// 获取下一个整点时间
-const getNextHourTime = () => {
-  const now = new Date()
-  const nextHour = new Date(now)
-  nextHour.setHours(now.getHours() + 1, 0, 0, 0)
-  return nextHour.toISOString().slice(0, 16) // 格式：YYYY-MM-DDTHH:mm
-}
+赛事规程：
+1.本次比赛执行国家体育总局最新审定的《乒乓球竞赛规则》及本次赛事特别规定。
+2.比赛为11分制，三局二胜。
+3.第一阶段为小组赛，第二阶段为淘汰赛（当报名人数不满36人时，当天比赛或将会被取消）。
+4.前三名获奖选手必须参加颁奖仪式，如不参加则视为放弃名次和奖励。
+5.请参赛运动员对自己的身体健康和言行举止负责，赛事方不对因选手自身问题产生的变故负责。
+组委会可根据报名人数适当调整赛制。
+6.本次比赛使用蝴蝶三星球。
+7.本次比赛成绩录入爱聚网积分系统。
+8.年龄超过70岁的球友以及患有心脏病、高血压、心脑血管疾病的球友谢绝参赛。
+9.参赛选手当天带好身份证件以备查验，不能出示有效身份证件者按弃权处理。
+10.比赛无故弃权且不听劝阻的选手将取消本次比赛的所有名次及奖励；禁止赌博；禁止在公共场所抽烟（厕所及走道内）。
+11.如发现有违体育道德的行为，可向组织方申诉，不得争吵、乃至损坏赛场设施、组织方有权根据现场情况对争议双方采取必要的合理处置。
+12.参加比赛者视为自愿参加，请参赛者斟酌自己的身体状况。
 
-// 表单数据
-const formData = ref({
-  title: '',
-  description: '',
-  startTime: getNextHourTime(),
-  location: '',
-  maxPlayers: '16',
-  type: 'SINGLES',
-  level: '0',
-  entryFee: '30'
-})
+奖品：
+第一名 1200元+1瓶价值￥588的赛湖之梦醇柔3号+证书+流动奖杯
+第二名 800元+1瓶价值￥388的赛湖之梦醇柔2号+证书
+第三名 500元+1瓶价值￥288的赛湖之梦醇柔1号+证书
+第四名 300元+1瓶价值￥199的青瓷赛里木第一坛+证书
 
-// 返回
-const onClickLeft = () => {
-  router.back()
-}
+若报名参赛人数超过48人，则
+增加并列第五名150元+证书
 
-// 提交表单
-const onSubmit = async (values) => {
-  try {
-    // 转换时间格式为时间戳
-    const startTime = new Date(values.startTime).getTime()
-    
-    // 确保数字字段为数字类型
-    const submitData = {
-      ...values,
-      startTime,
-      maxPlayers: parseInt(values.maxPlayers),
-      level: parseInt(values.level),
-      entryFee: parseFloat(values.entryFee)
+增加小组全胜奖：
+免下一场参赛报名费（可抵扣￥60）
+
+增加整场全胜奖：
+￥300 + 追加一份冠军奖品（醇柔3号）`,
+        startTime: '',
+        location: '',
+        maxPlayers: '',
+        type: '',
+        level: '',
+        entryFee: ''
+      }
     }
-    
-    // 添加调试日志
-    console.log('提交的表单数据:', values)
-    console.log('处理后的提交数据:', submitData)
-    
-    if (isEdit.value) {
-      console.log('正在更新赛事，ID:', route.params.id)
-      const response = await updateTournament(route.params.id, submitData)
-      console.log('更新赛事响应:', response)
-      showToast('修改成功')
-    } else {
-      console.log('正在创建新赛事')
-      const response = await createTournament(submitData)
-      console.log('创建赛事响应:', response)
-      showToast('创建成功')
+  },
+  methods: {
+    onClickLeft() {
+      this.$router.back()
+    },
+    onSubmit(values) {
+      // 提交表单逻辑
     }
-    router.back()
-  } catch (error) {
-    console.error('提交失败:', error)
-    console.error('错误详情:', error.response?.data || error.message)
-    showToast(error.message || (isEdit.value ? '修改失败' : '创建失败'))
   }
 }
-
-// 加载赛事详情
-const loadTournament = async () => {
-  if (!isEdit.value) return
-  
-  try {
-    const res = await getTournamentById(route.params.id)
-    const tournament = res.data
-    
-    // 转换时间戳为datetime-local格式
-    const formatDateTime = (timestamp) => {
-      const date = new Date(timestamp)
-      return date.toISOString().slice(0, 16) // 格式：YYYY-MM-DDTHH:mm
-    }
-    
-    formData.value = {
-      ...tournament,
-      startTime: formatDateTime(tournament.startTime)
-    }
-  } catch (error) {
-    showToast('获取赛事信息失败')
-    router.back()
-  }
-}
-
-onMounted(() => {
-  loadTournament()
-})
 </script>
 
 <style scoped>
@@ -262,4 +225,4 @@ onMounted(() => {
 :deep(.van-field__label) {
   width: 6em;
 }
-</style> 
+</style>
