@@ -115,15 +115,19 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'TournamentForm',
-  data() {
-    return {
-      isEdit: false,
-      formData: {
-        title: '',
-        description: `赛事信息：
+<script setup>
+import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { createTournament, updateTournament } from '@/api/tournament'
+import { showToast, showLoadingToast, closeToast } from 'vant'
+
+const router = useRouter()
+const route = useRoute()
+const isEdit = ref(false)
+
+const formData = ref({
+  title: '2025年乒乓球赛事',
+  description: `赛事信息：
 
 比赛赛制：三局两胜
 参赛人数：60
@@ -139,7 +143,7 @@ export default {
 4.前三名获奖选手必须参加颁奖仪式，如不参加则视为放弃名次和奖励。
 5.请参赛运动员对自己的身体健康和言行举止负责，赛事方不对因选手自身问题产生的变故负责。
 组委会可根据报名人数适当调整赛制。
-6.本次比赛使用蝴蝶三星球。
+6.本次比赛使用蝴蝶starcar。
 7.本次比赛成绩录入爱聚网积分系统。
 8.年龄超过70岁的球友以及患有心脏病、高血压、心脑血管疾病的球友谢绝参赛。
 9.参赛选手当天带好身份证件以备查验，不能出示有效身份证件者按弃权处理。
@@ -161,22 +165,53 @@ export default {
 
 增加整场全胜奖：
 ￥300 + 追加一份冠军奖品（醇柔3号）`,
-        startTime: '',
-        location: '',
-        maxPlayers: '',
-        type: '',
-        level: '',
-        entryFee: ''
-      }
+  startTime: '2025-09-01 12:00:00',
+  location: '11F',
+  maxPlayers: '32',
+  type: 'SINGLES',
+  level: '1800',
+  entryFee: '30'
+})
+
+const onClickLeft = () => {
+  router.back()
+}
+
+const onSubmit = async () => {
+  try {
+    showLoadingToast({
+      message: isEdit.value ? '保存中...' : '创建中...',
+      forbidClick: true
+    })
+
+    const submitData = {
+      ...formData.value,
+      maxPlayers: parseInt(formData.value.maxPlayers),
+      level: parseInt(formData.value.level),
+      entryFee: parseFloat(formData.value.entryFee)
     }
-  },
-  methods: {
-    onClickLeft() {
-      this.$router.back()
-    },
-    onSubmit(values) {
-      // 提交表单逻辑
+
+    if (isEdit.value) {
+      await updateTournament(route.params.id, submitData)
+    } else {
+      await createTournament(submitData)
     }
+
+    closeToast()
+    showToast({
+      type: 'success',
+      message: isEdit.value ? '保存成功' : '创建成功'
+    })
+    
+    // 使用replace而不是push，这样可以防止用户点击返回按钮时回到表单页
+    router.replace('/tournament')
+  } catch (error) {
+    console.error('提交表单失败:', error)
+    closeToast()
+    showToast({
+      type: 'fail',
+      message: error.message || '操作失败，请重试'
+    })
   }
 }
 </script>

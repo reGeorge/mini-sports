@@ -509,6 +509,11 @@ onMounted(async () => {
   margin-bottom: 8px;
   font-size: 14px;
   color: #666;
+  line-height: 1.6;
+  margin: 8px 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 0 12px;
 }
 
 .info-item .van-icon {
@@ -531,6 +536,9 @@ onMounted(async () => {
 
 .description {
   margin-top: 16px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 0 12px;
 }
 
 .description p {
@@ -650,4 +658,4 @@ onMounted(async () => {
 :deep(.van-cell) {
   align-items: center;
 }
-</style> 
+</style>

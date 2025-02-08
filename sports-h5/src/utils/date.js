@@ -63,7 +63,7 @@ export function getDaysBetween(startDate, endDate) {
 }
 
 // 格式化日期范围
-export function getDateRange(startTime, endTime, format = 'MM-DD HH:mm') {
+export function getDateRange(startTime, endTime, format = 'YYYY-MM-DD HH:mm:ss') {
   if (!startTime || !endTime) return ''
   return `${formatDate(startTime, format)} 至 ${formatDate(endTime, format)}`
 }
@@ -84,4 +84,4 @@ export function getCurrentDate() {
 export function compareDates(date1, date2) {
   if (!date1 || !date2) return 0
   return dayjs(date1).diff(dayjs(date2))
-} 
+}
