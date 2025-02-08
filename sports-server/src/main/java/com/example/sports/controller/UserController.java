@@ -12,12 +12,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
+import java.security.Permission;
 import java.time.LocalDateTime;
 
 import java.util.List;
 
 import com.example.sports.constant.AdminConstant;
 import com.example.sports.dto.AdminRegisterRequest;
+import com.example.sports.service.PermissionService;
 import com.example.sports.service.RoleService;
 import lombok.extern.slf4j.Slf4j;
 import com.example.sports.dto.LoginResponse;
@@ -83,6 +86,9 @@ public class UserController {
         return Result.success(roles);
     }
 
+    @Autowired
+    private PermissionService permissionService;
+
     @GetMapping("/{userId}/complete-info")
     public Result<User> getUserCompleteInfo(@PathVariable Long userId) {
         log.debug("获取用户完整信息，用户ID：{}", userId);
@@ -96,6 +102,11 @@ public class UserController {
         // 加载用户角色信息
         List<com.example.sports.entity.Role> roles = userMapper.findUserRoles(userId);
         user.setRoles(roles);
+        
+        // 加载用户权限信息
+        List<com.example.sports.entity.Permission> permissions = permissionService.findByUserId(userId);
+        user.setPermissions(permissions);
+        log.debug("用户权限信息加载完成，权限数量：{}", permissions.size());
         
         return Result.success(user);
     }
