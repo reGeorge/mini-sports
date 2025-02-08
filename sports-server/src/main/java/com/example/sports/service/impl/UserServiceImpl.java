@@ -3,6 +3,7 @@ package com.example.sports.service.impl;
 import com.example.sports.dto.LoginDTO;
 import com.example.sports.dto.RegisterDTO;
 import com.example.sports.dto.UpdateUserDTO;
+import com.example.sports.dto.UpdatePointsDTO;
 import com.example.sports.entity.User;
 import com.example.sports.entity.Role;
 import com.example.sports.mapper.UserMapper;
@@ -33,6 +34,33 @@ public class UserServiceImpl implements UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Override
+    @Transactional
+    public void updatePoints(UpdatePointsDTO updatePointsDTO) {
+        if (updatePointsDTO.getUserId() == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        if (updatePointsDTO.getPoints() == null) {
+            throw new RuntimeException("积分不能为空");
+        }
+        
+        User user = userMapper.selectById(updatePointsDTO.getUserId());
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 更新用户积分
+        Integer currentPoints = user.getPoints() != null ? user.getPoints() : 0;
+        user.setPoints(currentPoints + updatePointsDTO.getPoints());
+        userMapper.updateById(user);
+        
+        log.info("用户{}积分更新成功，变更：{}，原因：{}，类型：{}", 
+                user.getNickname(), 
+                updatePointsDTO.getPoints(), 
+                updatePointsDTO.getReason(), 
+                updatePointsDTO.getType());
+    }
 
     @Override
     @Transactional
@@ -121,7 +149,7 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户ID不能为空");
         }
         
-        User existingUser = userMapper.findById(updateUserDTO.getId());
+        User existingUser = userMapper.selectById(updateUserDTO.getId());
         if (existingUser == null) {
             throw new RuntimeException("用户不存在");
         }
@@ -146,4 +174,22 @@ public class UserServiceImpl implements UserService {
         userMapper.insert(user);
         return user;
     }
-} 
+    @Override
+    public User getUserInfo(Long userId) {
+        if (userId == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        // 加载用户角色信息
+        user.setRoles(userMapper.findUserRoles(user.getId()));
+        log.debug("获取用户信息成功，用户ID：{}，昵称：{}，积分：{}，等级：{}", 
+            user.getId(), user.getNickname(), user.getPoints(), user.getLevel());
+            
+        return user;
+    }
+}

@@ -57,4 +57,13 @@ export function registerAdmin(data) {
     method: 'post',
     data
   })
-} 
+}
+
+// 更新用户积分
+export function updateUserPoints(data) {
+  return request({
+    url: `/user/points/update`,
+    method: 'post',
+    data
+  })
+}

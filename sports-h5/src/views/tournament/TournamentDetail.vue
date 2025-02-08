@@ -68,8 +68,8 @@
             <span class="registration-number">{{ index + 1 }}</span>
           </template>
           <template #title>
-            <span class="user-name">{{ registration.user.nickname }}</span>
-            <van-tag type="primary" size="small" class="points-tag">{{ registration.user.points || 0 }}分</van-tag>
+            <span class="user-name">{{ registration.user?.nickname || '未知用户' }}</span>
+            <van-tag type="primary" size="small" class="points-tag">{{ registration.user?.points || 0 }}分</van-tag>
           </template>
           <template #right-icon>
             <van-tag :type="getRegistrationStatusType(registration.status)">
@@ -265,8 +265,6 @@ const loadTournament = async () => {
 
 // 获取报名列表
 const loadRegistrations = async () => {
-  if (!hasPermission('tournament:view')) return
-  
   try {
     const res = await getRegistrations(route.params.id)
     registrations.value = res.data

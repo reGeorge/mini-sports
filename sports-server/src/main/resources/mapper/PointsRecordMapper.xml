@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.PointsRecordMapper">
+    <insert id="insert" parameterType="com.example.sports.entity.PointsRecord">
+        INSERT INTO points_record (
+            user_id,
+            points,
+            type,
+            description,
+            create_time,
+            update_time
+        ) VALUES (
+            #{userId},
+            #{points},
+            #{type},
+            #{description},
+            #{createTime},
+            #{updateTime}
+        )
+    </insert>
+    
+    <select id="getPointsRecords" resultType="com.example.sports.entity.PointsRecord">
+        SELECT * FROM points_record
+        WHERE user_id = #{userId}
+        ORDER BY create_time DESC
+        LIMIT #{size} OFFSET #{offset}
+    </select>
+    
+    <select id="getPointsRecordsCount" resultType="long">
+        SELECT COUNT(*) FROM points_record
+        WHERE user_id = #{userId}
+    </select>
+</mapper>

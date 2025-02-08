@@ -75,6 +75,8 @@ import TabbarLayout from '@/components/layout/TabbarLayout.vue'
 import { getUserRoles } from '@/api/user'
 import { getUserPermissions } from '@/api/permission'
 import { hasRole, hasPermission } from '@/utils/permission'
+import { getUserPoints } from '@/api/points'
+import { getUserCompleteInfo } from '@/api/user-info'
 
 export default {
   name: 'Profile',
@@ -94,17 +96,18 @@ export default {
         const parsedUserInfo = JSON.parse(storedUserInfo)
         
         try {
-          // 从后端重新获取用户的角色和权限信息
-          const [rolesRes, permissionsRes] = await Promise.all([
-            getUserRoles(parsedUserInfo.id),
-            getUserPermissions(parsedUserInfo.id)
-          ])
+          // 使用新的API获取完整的用户信息
+          const response = await getUserCompleteInfo(parsedUserInfo.id)
+          const completeInfo = response.data
           
-          parsedUserInfo.roles = rolesRes.data
+          // 更新用户信息
+          parsedUserInfo.roles = completeInfo.roles
+          parsedUserInfo.points = completeInfo.points || 0
+          parsedUserInfo.level = completeInfo.level || '暂无'
           
           // 更新 localStorage 中的用户信息和权限
           localStorage.setItem('userInfo', JSON.stringify(parsedUserInfo))
-          localStorage.setItem('userPermissions', JSON.stringify(permissionsRes.data))
+          localStorage.setItem('userPermissions', JSON.stringify(completeInfo.permissions))
           
           // 更新页面显示
           userInfo.value = parsedUserInfo
@@ -321,4 +324,4 @@ export default {
   background: #1989fa !important;
   color: white !important;
 }
-</style> 
+</style>

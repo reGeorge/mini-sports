@@ -3,6 +3,7 @@ package com.example.sports.controller;
 import com.example.sports.common.response.Result;
 import com.example.sports.dto.LoginDTO;
 import com.example.sports.dto.RegisterDTO;
+import com.example.sports.dto.UpdatePointsDTO;
 import com.example.sports.dto.UpdateUserDTO;
 import com.example.sports.entity.User;
 import com.example.sports.mapper.UserMapper;
@@ -25,6 +26,8 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.management.relation.Role;
 
 @Slf4j
 @RestController
@@ -56,6 +59,14 @@ public class UserController {
         return Result.success(userMapper.findAll());
     }
 
+    // 查询用户积分/等级/排名
+    @GetMapping("userInfo/{userId}")
+    public Result<User> getUserInfo(@PathVariable Long userId) {
+        User user = userService.getUserInfo(userId);
+        return Result.success(user);
+    }
+
+
     @GetMapping("/search")
     public Result<List<User>> search(@RequestParam String nickname) {
         log.debug("搜索用户，昵称关键字：{}", nickname);
@@ -70,6 +81,23 @@ public class UserController {
         log.debug("获取用户角色，用户ID：{}", userId);
         List<com.example.sports.entity.Role> roles = userMapper.findUserRoles(userId);
         return Result.success(roles);
+    }
+
+    @GetMapping("/{userId}/complete-info")
+    public Result<User> getUserCompleteInfo(@PathVariable Long userId) {
+        log.debug("获取用户完整信息，用户ID：{}", userId);
+        
+        // 获取用户基本信息
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+        
+        // 加载用户角色信息
+        List<com.example.sports.entity.Role> roles = userMapper.findUserRoles(userId);
+        user.setRoles(roles);
+        
+        return Result.success(user);
     }
 
     @PutMapping("/{userId}/roles")
@@ -174,4 +202,16 @@ public class UserController {
             return Result.error("注册失败：" + e.getMessage());
         }
     }
-} 
+
+    @PostMapping("/points/update")
+    public Result<Void> updatePoints(@RequestBody UpdatePointsDTO updatePointsDTO) {
+        log.debug("更新用户积分，请求数据：{}", updatePointsDTO);
+        try {
+            userService.updatePoints(updatePointsDTO);
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("更新用户积分失败", e);
+            return Result.error(e.getMessage());
+        }
+    }
+}

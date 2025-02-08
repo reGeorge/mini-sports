@@ -4,8 +4,14 @@
  * @returns {boolean} - 是否有权限
  */
 export function hasPermission(permissionCode) {
-  const permissions = JSON.parse(localStorage.getItem('userPermissions') || '[]')
-  return permissions.some(permission => permission.code === permissionCode)
+  if (!permissionCode) return false
+  try {
+    const permissions = JSON.parse(localStorage.getItem('userPermissions') || '[]')
+    return Array.isArray(permissions) && permissions.some(permission => permission && permission.code === permissionCode)
+  } catch (error) {
+    console.error('Error parsing permissions:', error)
+    return false
+  }
 }
 
 /**
@@ -46,4 +52,4 @@ export function hasAnyPermission(permissionCodes) {
 export function hasAllPermissions(permissionCodes) {
   const userPermissions = getUserPermissionCodes()
   return permissionCodes.every(code => userPermissions.includes(code))
-} 
+}

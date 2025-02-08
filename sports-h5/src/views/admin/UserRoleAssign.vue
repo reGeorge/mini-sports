@@ -30,26 +30,39 @@
             </div>
           </template>
           <template #label>
-            <div class="current-roles">
-              当前角色：
-              <van-tag 
-                v-for="role in user.roles" 
-                :key="role.id" 
-                :type="getRoleTagType(role.code)"
-                class="role-tag"
-                size="medium"
-              >
-                {{ role.name }}
-              </van-tag>
+            <div class="user-info-details">
+              <div class="current-roles">
+                当前角色：
+                <van-tag 
+                  v-for="role in user.roles" 
+                  :key="role.id" 
+                  :type="getRoleTagType(role.code)"
+                  class="role-tag"
+                  size="medium"
+                >
+                  {{ role.name }}
+                </van-tag>
+              </div>
+              <div class="points-info">
+                积分：<span class="points-value">{{ user.points || 0 }}</span>
+              </div>
             </div>
           </template>
           <template #right-icon>
             <van-button 
               size="small" 
               type="primary" 
+              style="margin-right: 8px;"
               @click="showRoleSelect(user)"
             >
-              分配角色
+              角色设置
+            </van-button>
+            <van-button 
+              size="small" 
+              type="info" 
+              @click="showPointsSelect(user)"
+            >
+              积分设置
             </van-button>
           </template>
         </van-cell>
@@ -66,11 +79,11 @@
       v-model:show="showRoleDialog"
       position="bottom"
       round
-      :style="{ height: '60%' }"
+      :style="{ height: '50%' }"
     >
       <div class="role-select-dialog">
         <div class="dialog-header">
-          <span class="title">选择角色</span>
+          <span class="title">角色设置</span>
           <van-icon name="cross" @click="showRoleDialog = false" />
         </div>
         <div class="dialog-content">
@@ -94,6 +107,40 @@
         </div>
       </div>
     </van-popup>
+
+    <!-- 积分设置弹窗 -->
+    <van-popup
+      v-model:show="showPointsDialog"
+      position="bottom"
+      round
+      :style="{ height: '50%' }"
+    >
+      <div class="points-select-dialog">
+        <div class="dialog-header">
+          <span class="title">积分设置</span>
+          <van-icon name="cross" @click="showPointsDialog = false" />
+        </div>
+        <div class="dialog-content">
+          <div class="points-input-group">
+            <van-field
+              v-model="pointsInput"
+              label="积分值"
+              type="number"
+              placeholder="请输入要设置的积分值"
+            />
+            <van-field
+              v-model="pointsReason"
+              label="变更原因"
+              type="text"
+              placeholder="请输入积分变更原因"
+            />
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <van-button type="primary" block @click="saveUserPoints">保存</van-button>
+        </div>
+      </div>
+    </van-popup>
   </div>
 </template>
 
@@ -102,7 +149,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 import { getRoles } from '@/api/role'
-import { searchUsers, getUserRoles, assignUserRoles } from '@/api/user'
+import { searchUsers, getUserRoles, assignUserRoles, updateUserPoints } from '@/api/user'
 
 const router = useRouter()
 const users = ref([])
@@ -110,8 +157,11 @@ const allRoles = ref([])
 const searchValue = ref('')
 const hasSearched = ref(false)
 const showRoleDialog = ref(false)
+const showPointsDialog = ref(false)
 const selectedRoles = ref([])
 const currentUser = ref(null)
+const pointsInput = ref('')
+const pointsReason = ref('')
 
 // 加载所有角色
 const loadRoles = async () => {
@@ -153,9 +203,37 @@ const onCancel = () => {
 // 显示角色选择
 const showRoleSelect = async (user) => {
   currentUser.value = user
-  // 确保角色ID是数字类型
   selectedRoles.value = user.roles.map(role => Number(role.id))
+  pointsInput.value = String(user.points || 0)
+  pointsReason.value = ''
   showRoleDialog.value = true
+}
+
+// 显示积分设置弹窗
+const showPointsSelect = (user) => {
+  currentUser.value = user
+  pointsInput.value = ''
+  pointsReason.value = ''
+  showPointsDialog.value = true
+}
+
+// 保存用户积分
+const saveUserPoints = async () => {
+  if (!currentUser.value || !pointsInput.value || !pointsReason.value) {
+    showToast('请填写完整信息')
+    return
+  }
+  try {
+    await updateUserPoints({
+      userId: currentUser.value.id,
+      points: Number(pointsInput.value),
+      reason: pointsReason.value
+    })
+    showToast('积分设置成功')
+    showPointsDialog.value = false
+  } catch (error) {
+    showToast('积分设置失败')
+  }
 }
 
 // 切换角色选择
@@ -328,4 +406,40 @@ onMounted(() => {
   padding: 16px;
   border-top: 1px solid #eee;
 }
-</style> 
+.user-info-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.points-info {
+  font-size: 14px;
+  color: #666;
+}
+
+.points-value {
+  color: #ff6b00;
+  font-weight: bold;
+}
+
+.section-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #333;
+  margin: 16px 16px 8px;
+}
+
+.points-section {
+  margin-top: 16px;
+}
+
+.points-input-group {
+  padding: 0 16px;
+}
+
+:deep(.van-field) {
+  background-color: #f7f8fa;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+</style>

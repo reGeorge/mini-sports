@@ -17,4 +17,10 @@
         FROM user
         WHERE id = #{id}
     </select>
-</mapper> 
+
+    <!-- 插入积分记录 -->
+    <insert id="insertPointsRecord" parameterType="com.example.sports.entity.PointsRecord">
+        INSERT INTO points_record (user_id, points, description, type, create_time, update_time)
+        VALUES (#{userId}, #{points}, #{description}, #{type}, #{createTime}, #{updateTime})
+    </insert>
+</mapper>

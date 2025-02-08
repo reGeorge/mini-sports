@@ -152,4 +152,4 @@ public class TournamentRegistrationServiceImpl implements TournamentRegistration
         registration.setUpdatedAt(new Date());
         registrationMapper.updateById(registration);
     }
-} 
+}
