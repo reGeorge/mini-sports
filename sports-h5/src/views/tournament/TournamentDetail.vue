@@ -475,14 +475,24 @@ onMounted(async () => {
 .tournament-detail {
   min-height: 100vh;
   background-color: #f7f8fa;
-  padding-bottom: 100px;
+  display: flex;
+  flex-direction: column;
+}
+
+:deep(.van-nav-bar) {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 99;
 }
 
 .info-card {
-  margin: 12px;
+  margin-top: 46px;
   padding: 16px;
-  background-color: #fff;
+  background: #fff;
   border-radius: 8px;
+  margin-bottom: 12px;
 }
 
 .header {

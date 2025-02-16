@@ -269,6 +269,7 @@ onMounted(() => {
 
 .search-box {
   background-color: #fff;
+  position: relative;
   z-index: 98;
 }
 
@@ -277,6 +278,8 @@ onMounted(() => {
   overflow-y: auto;
   padding: 12px;
   padding-bottom: 80px;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
 }
 
 .tournament-card {

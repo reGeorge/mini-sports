@@ -23,11 +23,14 @@ const active = ref(0)
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .content {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 :deep(.van-tabbar) {
@@ -46,4 +49,4 @@ const active = ref(0)
 :deep(.van-tabbar-item__icon) {
   font-size: 20px;
 }
-</style> 
+</style>

@@ -1,7 +1,7 @@
 <template>
   <tabbar-layout>
     <div class="points-search">
-      <van-nav-bar title="查积分" />
+      <van-nav-bar title="查积分" fixed />
       
       <!-- 搜索框 -->
       <div class="search-box">
@@ -168,15 +168,27 @@ export default {
 }
 
 .search-box {
+  position: fixed;
+  top: 46px;
+  left: 0;
+  right: 0;
   background-color: #fff;
   z-index: 98;
 }
 
 .list-container {
-  flex: 1;
   overflow-y: auto;
+  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none;  /* IE and Edge */
+  flex: 1;
   padding: 12px;
   padding-bottom: 80px;
+  margin-top: 100px;
+  -webkit-scrollbar-width: none;
+}
+
+.list-container::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 .result-item {
@@ -283,4 +295,11 @@ export default {
 .no-result {
   margin-top: 60px;
 }
-</style> 
+:deep(.van-nav-bar) {
+  z-index: 99;
+}
+
+:deep(.van-search) {
+  z-index: 98;
+}
+</style>

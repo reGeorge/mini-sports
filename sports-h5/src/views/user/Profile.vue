@@ -189,6 +189,13 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
+  overflow: hidden;
+}
+
+:deep(.van-nav-bar) {
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 .list-container {
@@ -196,6 +203,12 @@ export default {
   overflow-y: auto;
   padding: 16px;
   padding-bottom: 80px;
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.list-container::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 .user-card {
