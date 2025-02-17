@@ -126,7 +126,7 @@
               v-model="pointsInput"
               label="积分值"
               type="number"
-              placeholder="请输入要设置的积分值"
+              placeholder="请输入要设置的积分差值"
             />
             <van-field
               v-model="pointsReason"
