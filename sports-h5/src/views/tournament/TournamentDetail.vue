@@ -6,79 +6,182 @@
       left-arrow
       @click-left="onClickLeft"
     />
-    
-    <!-- 赛事基本信息 -->
-    <div class="info-card">
-      <div class="header">
-        <div class="title">{{ tournament.title }}</div>
-        <van-tag :type="getStatusType(tournament.status)" size="medium">
-          {{ getStatusText(tournament.status) }}
-        </van-tag>
-      </div>
-      
-      <div class="info-list">
-        <div class="info-item">
-          <van-icon name="clock-o" />
-          <span class="label">比赛时间：</span>
-          <span>{{ getDateRange(tournament.startTime, tournament.endTime) }}</span>
-        </div>
-        <div class="info-item">
-          <van-icon name="location-o" />
-          <span class="label">比赛地点：</span>
-          <span>{{ tournament.location }}</span>
-        </div>
-        <div class="info-item">
-          <van-icon name="friends-o" />
-          <span class="label">参与人数：</span>
-          <span>{{ tournament.currentPlayers }}/{{ tournament.maxPlayers }}</span>
-        </div>
-        <div class="info-item">
-          <van-icon name="medal-o" />
-          <span class="label">比赛类型：</span>
-          <span>{{ getTypeText(tournament.type) }}</span>
-        </div>
-        <div class="info-item">
-          <van-icon name="award-o" />
-          <span class="label">积分上限：</span>
-          <span>{{ tournament.level === '0' ? '无限制' : tournament.level }}</span>
-        </div>
-        <div class="info-item">
-          <van-icon name="gold-coin-o" />
-          <span class="label">报名费用：</span>
-          <span>{{ tournament.entryFee }}元</span>
-        </div>
-      </div>
 
-      <div class="description">
-        <div class="section-title">赛事说明</div>
-        <p>{{ tournament.description }}</p>
-      </div>
-    </div>
+    <!-- 标签页导航 -->
+    <van-tabs  v-model:active="activeTab" sticky>
+      <van-tab title="详情" name="details">
+        <!-- 基本信息卡片 -->
+        <div class="description-card">
+          <!-- 赛事标题和状态 -->
+          <div class="header-card">
+            <div class="header">
+              <div class="title">{{ tournament.title }}</div>
+              <van-tag :type="getStatusType(tournament.status)" size="medium">
+                {{ getStatusText(tournament.status) }}
+              </van-tag>
+            </div>
+          </div>
+          <div class="info-list">
+            <div class="info-item">
+              <van-icon name="clock-o" />
+              <span class="label">比赛时间：</span>
+              <span>{{ getDateRange(tournament.startTime, tournament.endTime) }}</span>
+            </div>
+            <div class="info-item">
+              <van-icon name="location-o" />
+              <span class="label">比赛地点：</span>
+              <span>{{ tournament.location }}</span>
+            </div>
+            <div class="info-item">
+              <van-icon name="friends-o" />
+              <span class="label">参与人数：</span>
+              <span>{{ tournament.currentPlayers }}/{{ tournament.maxPlayers }}</span>
+            </div>
+            <div class="info-item">
+              <van-icon name="medal-o" />
+              <span class="label">比赛类型：</span>
+              <span>{{ getTypeText(tournament.type) }}</span>
+            </div>
+            <div class="info-item">
+              <van-icon name="award-o" />
+              <span class="label">积分上限：</span>
+              <span>{{ tournament.level === '0' ? '无限制' : tournament.level }}</span>
+            </div>
+            <div class="info-item">
+              <van-icon name="gold-coin-o" />
+              <span class="label">报名费用：</span>
+              <span>{{ tournament.entryFee }}元</span>
+            </div>
+          </div>
+        </div>
 
-    <!-- 报名列表 -->
-    <div class="registration-list">
-      <div class="section-title">报名列表 ({{ sortedRegistrations.length }}人)</div>
-      <van-cell-group>
-        <van-cell
-          v-for="(registration, index) in sortedRegistrations"
-          :key="registration.id"
-          @click="showUserDetail(registration.user)"
-        >
-          <template #icon>
-            <span class="registration-number">{{ index + 1 }}</span>
+        <!-- 赛事说明卡片 -->
+        <div class="description-card">
+          <h3>赛事说明</h3>
+          <p class="description-text">{{ tournament.description }}</p>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div class="action-bar">
+          <!-- 状态操作按钮 -->
+          <template v-if="hasPermission('tournament:edit')">
+            <van-button 
+              v-if="tournament.status === 'DRAFT'"
+              type="primary" 
+              block 
+              @click="updateStatus('REGISTERING')"
+            >
+              开始报名
+            </van-button>
+            <van-button 
+              v-if="tournament.status === 'REGISTERING'"
+              type="primary" 
+              block 
+              @click="updateStatus('ONGOING')"
+            >
+              开始比赛
+            </van-button>
+            <van-button 
+              v-if="tournament.status === 'ONGOING'"
+              type="warning" 
+              block 
+              @click="updateStatus('FINISHED')"
+            >
+              结束比赛
+            </van-button>
           </template>
-          <template #title>
-            <span class="user-name">{{ registration.user?.nickname || '未知用户' }}</span>
-            <van-tag type="primary" size="small" class="points-tag">{{ registration.user?.points || 0 }}分</van-tag>
+
+          <!-- 编辑按钮 -->
+          <template v-if="hasPermission('tournament:edit') && tournament.status === 'DRAFT'">
+            <van-button 
+              type="default" 
+              block 
+              @click="editTournament"
+            >
+              编辑赛事
+            </van-button>
           </template>
-          <template #right-icon>
-            <van-tag :type="getRegistrationStatusType(registration.status)">
-              {{ getRegistrationStatusText(registration.status) }}
-            </van-tag>
+
+          <!-- 删除按钮 -->
+          <template v-if="hasPermission('tournament:delete') && tournament.status === 'DRAFT'">
+            <van-button 
+              type="danger" 
+              block 
+              @click="deleteTournament"
+            >
+              删除赛事
+            </van-button>
           </template>
-        </van-cell>
-      </van-cell-group>
-    </div>
+
+          <!-- 报名按钮 -->
+          <van-button 
+            v-if="tournament.status === 'REGISTERING' && !isRegistered"
+            type="primary" 
+            block 
+            @click="register"
+          >
+            立即报名
+          </van-button>
+
+          <!-- 取消报名按钮 -->
+          <van-button 
+            v-if="tournament.status === 'REGISTERING' && isRegistered"
+            type="danger" 
+            block 
+            @click="cancelRegistration"
+          >
+            取消报名
+          </van-button>
+        </div>
+      </van-tab>
+
+      <van-tab title="参赛名单" name="registrations">
+        <div class="registrations-card">
+          <template v-if="sortedRegistrations.length > 0">
+            <div class="registration-list">
+              <div v-for="registration in sortedRegistrations" :key="registration.id" class="registration-item">
+                <div class="user-info" @click="showUserDetail(registration.user)">
+                  <span class="name">{{ registration.user?.nickname }}</span>
+                </div>
+                <van-tag >{{ registration.user?.points || 0 }}分</van-tag>
+                <van-tag :type="getRegistrationStatusType(registration.status)">
+                  {{ getRegistrationStatusText(registration.status) }}
+                </van-tag>
+              </div>
+            </div>
+          </template>
+          <van-empty v-else description="暂无报名信息" />
+        </div>
+      </van-tab>
+
+      <van-tab title="赛程" name="schedule">
+        <div class="schedule-card">
+          <template v-if="matchRecords.length > 0">
+            <div v-for="match in matchRecords" :key="match.id" class="match-item" @click="goToMatchDetail(match.id)">
+              <div class="match-header">
+                <span class="match-time">{{ formatDateTime(match.startTime) }}</span>
+                <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
+              </div>
+              <div class="match-players">
+                <span class="player">{{ match.player1Name }}</span>
+                <span class="vs">VS</span>
+                <span class="player">{{ match.player2Name }}</span>
+              </div>
+              <div class="match-score" v-if="match.status !== 'PENDING'">
+                <span>{{ match.player1Score || 0 }}</span>
+                <span>:</span>
+                <span>{{ match.player2Score || 0 }}</span>
+              </div>
+              <div class="match-actions" v-if="hasPermission('match:manage') && match.status !== 'FINISHED'">
+                <van-button size="small" type="primary" @click.stop="openScoreDialog(match)">录入比分</van-button>
+                <van-button size="small" @click.stop="goToMatchDetail(match.id)">查看详情</van-button>
+              </div>
+            </div>
+          </template>
+          <van-empty v-else description="暂无赛程安排" />
+        </div>
+      </van-tab>
+    </van-tabs>
 
     <!-- 用户详情弹窗 -->
     <van-popup v-model:show="showDetailPopup" round position="bottom" :style="{ height: '80%' }">
@@ -136,79 +239,6 @@
       </div>
     </van-popup>
 
-    <!-- 操作按钮 -->
-    <div class="action-bar">
-      <!-- 状态操作按钮 -->
-      <template v-if="hasPermission('tournament:edit')">
-        <van-button 
-          v-if="tournament.status === 'DRAFT'"
-          type="primary" 
-          block 
-          @click="updateStatus('REGISTERING')"
-        >
-          开始报名
-        </van-button>
-        <van-button 
-          v-if="tournament.status === 'REGISTERING'"
-          type="primary" 
-          block 
-          @click="updateStatus('ONGOING')"
-        >
-          开始比赛
-        </van-button>
-        <van-button 
-          v-if="tournament.status === 'ONGOING'"
-          type="warning" 
-          block 
-          @click="updateStatus('FINISHED')"
-        >
-          结束比赛
-        </van-button>
-      </template>
-
-      <!-- 编辑按钮 -->
-      <template v-if="hasPermission('tournament:edit') && tournament.status === 'DRAFT'">
-        <van-button 
-          type="default" 
-          block 
-          @click="editTournament"
-        >
-          编辑赛事
-        </van-button>
-      </template>
-
-      <!-- 删除按钮 -->
-      <template v-if="hasPermission('tournament:delete') && tournament.status === 'DRAFT'">
-        <van-button 
-          type="danger" 
-          block 
-          @click="deleteTournament"
-        >
-          删除赛事
-        </van-button>
-      </template>
-
-      <!-- 报名按钮 -->
-      <van-button 
-        v-if="tournament.status === 'REGISTERING' && !isRegistered"
-        type="primary" 
-        block 
-        @click="register"
-      >
-        立即报名
-      </van-button>
-
-      <!-- 取消报名按钮 -->
-      <van-button 
-        v-if="tournament.status === 'REGISTERING' && isRegistered"
-        type="danger" 
-        block 
-        @click="cancelRegistration"
-      >
-        取消报名
-      </van-button>
-    </div>
-
     <!-- 报名确认弹窗 -->
     <van-dialog
       v-model:show="showRegisterDialog"
@@ -244,6 +274,8 @@ const isRegistered = ref(false)
 const myRegistration = ref(null)
 const showDetailPopup = ref(false)
 const selectedUser = ref(null)
+const activeTab = ref('details')
+const matchRecords = ref([])
 
 // 获取当前用户ID
 const getCurrentUserId = () => {
@@ -471,12 +503,21 @@ onMounted(async () => {
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .tournament-detail {
   min-height: 100vh;
   background-color: #f7f8fa;
   display: flex;
   flex-direction: column;
+  padding-top: 46px;
+}
+
+.header-card {
+  padding: 10px;
+  background: #fff;
+  border-radius: 8px;
+  position: relative;
+  z-index: 2;
 }
 
 :deep(.van-nav-bar) {
@@ -563,12 +604,35 @@ onMounted(async () => {
   border-radius: 8px;
 }
 
+.description-card {
+  margin: 16px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  
+}
+
+.description-card h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #333;
+}
+
+.description-text {
+  margin-bottom: 60%;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
 .action-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 16px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background-color: #fff;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
   display: flex;
@@ -665,5 +729,37 @@ onMounted(async () => {
 
 :deep(.van-cell) {
   align-items: center;
+}
+.registration-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background-color: #fff;
+  border: 1px solid #ebedf0;
+  border-radius: 8px;
+}
+
+.registration-item .user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.registration-item .name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #323233;
+}
+
+.registration-item :deep(.van-tag) {
+  margin-left: 8px;
+}
+
+.registration-item {
+  .user-info {
+    flex: 1;
+  }
 }
 </style>

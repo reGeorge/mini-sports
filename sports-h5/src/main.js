@@ -35,7 +35,9 @@ import {
   TimePicker,
   PickerGroup,
   Radio,
-  RadioGroup
+  RadioGroup,
+  Tabs,
+  Tab
 } from 'vant'
 
 const app = createApp(App)
@@ -70,7 +72,9 @@ const vantComponents = [
   TimePicker,
   PickerGroup,
   Radio,
-  RadioGroup
+  RadioGroup,
+  Tabs,
+  Tab
 ]
 
 vantComponents.forEach(component => {

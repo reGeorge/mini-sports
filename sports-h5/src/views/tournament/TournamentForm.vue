@@ -116,14 +116,35 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { createTournament, updateTournament } from '@/api/tournament'
+import { createTournament, updateTournament, getTournamentById } from '@/api/tournament'
 import { showToast, showLoadingToast, closeToast } from 'vant'
 
 const router = useRouter()
 const route = useRoute()
 const isEdit = ref(false)
+
+// 初始化时检查是否为编辑模式
+onMounted(async () => {
+  const id = route.params.id
+  if (id) {
+    isEdit.value = true
+    try {
+      const res = await getTournamentById(id)
+      formData.value = {
+        ...res.data,
+        startTime: res.data.startTime.slice(0, 16), // 格式化时间为datetime-local格式
+        maxPlayers: String(res.data.maxPlayers),
+        level: String(res.data.level),
+        entryFee: String(res.data.entryFee)
+      }
+    } catch (error) {
+      showToast('获取赛事信息失败')
+      router.back()
+    }
+  }
+})
 
 const formData = ref({
   title: '2025年乒乓球赛事',
@@ -142,7 +163,7 @@ const formData = ref({
 4.前三名获奖选手必须参加颁奖仪式，如不参加则视为放弃名次和奖励。
 5.请参赛运动员对自己的身体健康和言行举止负责，赛事方不对因选手自身问题产生的变故负责。
 组委会可根据报名人数适当调整赛制。
-6.本次比赛使用红双喜三星球。
+6.本次比赛使用红双喜starcar。
 7.本次比赛成绩录入积分系统。
 8.年龄超过70岁的球友以及患有心脏病、高血压、心脑血管疾病的球友谢绝参赛。
 9.参赛选手当天带好身份证件以备查验，不能出示有效身份证件者按弃权处理。
@@ -177,40 +198,33 @@ const onClickLeft = () => {
 }
 
 const onSubmit = async () => {
-  try {
-    showLoadingToast({
-      message: isEdit.value ? '保存中...' : '创建中...',
-      forbidClick: true
-    })
+  const loading = showLoadingToast({
+    message: isEdit.value ? '保存中...' : '创建中...',
+    forbidClick: true,
+  })
 
-    const submitData = {
+  try {
+    // 格式化日期为后端所需格式
+    const formattedData = {
       ...formData.value,
-      maxPlayers: parseInt(formData.value.maxPlayers),
-      level: parseInt(formData.value.level),
-      entryFee: parseFloat(formData.value.entryFee)
+      startTime: formData.value.startTime + ':00',
+      maxPlayers: Number(formData.value.maxPlayers),
+      level: Number(formData.value.level),
+      entryFee: Number(formData.value.entryFee)
     }
 
     if (isEdit.value) {
-      await updateTournament(route.params.id, submitData)
+      await updateTournament(route.params.id, formattedData)
+      showToast('修改成功')
     } else {
-      await createTournament(submitData)
+      await createTournament(formattedData)
+      showToast('创建成功')
     }
-
-    closeToast()
-    showToast({
-      type: 'success',
-      message: isEdit.value ? '保存成功' : '创建成功'
-    })
-    
-    // 使用replace而不是push，这样可以防止用户点击返回按钮时回到表单页
-    router.replace('/tournament')
+    router.back()
   } catch (error) {
-    console.error('提交表单失败:', error)
-    closeToast()
-    showToast({
-      type: 'fail',
-      message: error.message || '操作失败，请重试'
-    })
+    showToast(error.message || '操作失败')
+  } finally {
+    loading.close()
   }
 }
 </script>
