@@ -139,8 +139,9 @@
         <div class="registrations-card">
           <template v-if="sortedRegistrations.length > 0">
             <div class="registration-list">
-              <div v-for="registration in sortedRegistrations" :key="registration.id" class="registration-item">
+              <div v-for="(registration, index) in sortedRegistrations" :key="registration.id" class="registration-item">
                 <div class="user-info" @click="showUserDetail(registration.user)">
+                  <div class="index-circle">{{ index + 1 }}</div>
                   <span class="name">{{ registration.user?.nickname }}</span>
                 </div>
                 <van-tag >{{ registration.user?.points || 0 }}分</van-tag>
@@ -295,7 +296,7 @@ const loadTournament = async () => {
   }
 }
 
-// 获取报名列表
+// 获取报名列表 参赛名单
 const loadRegistrations = async () => {
   try {
     const res = await getRegistrations(route.params.id)
@@ -307,8 +308,8 @@ const loadRegistrations = async () => {
       isRegistered.value = !!myRegistration.value
     }
   } catch (error) {
-    console.error('获取报名列表失败:', error)
-    showToast('获取报名列表失败')
+    console.error('获取参赛名单失败:', error)
+    showToast('获取参赛名单失败')
   }
 }
 
@@ -760,6 +761,22 @@ onMounted(async () => {
 .registration-item {
   .user-info {
     flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .index-circle {
+      width: 24px;
+      height: 24px;
+      background-color: #f2f3f5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #666;
+      font-weight: 500;
+    }
   }
 }
 </style>
