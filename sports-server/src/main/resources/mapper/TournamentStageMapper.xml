@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.TournamentStageMapper">
+    <insert id="insert" parameterType="com.example.sports.entity.TournamentStage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO tournament_stage (
+            tournament_id,
+            type,
+            status,
+            order_num,
+            name,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{tournamentId},
+            #{type},
+            #{status},
+            #{orderNum},
+            #{name},
+            #{createdAt},
+            #{updatedAt}
+        )
+    </insert>
+
+    <select id="selectById" resultType="com.example.sports.entity.TournamentStage">
+        SELECT * FROM tournament_stage WHERE id = #{id}
+    </select>
+
+    <select id="selectByTournamentId" resultType="com.example.sports.entity.TournamentStage">
+        SELECT * FROM tournament_stage WHERE tournament_id = #{tournamentId} ORDER BY order_num
+    </select>
+
+    <select id="selectCurrentStage" resultType="com.example.sports.entity.TournamentStage">
+        SELECT * FROM tournament_stage 
+        WHERE tournament_id = #{tournamentId} 
+        AND status IN ('PENDING', 'ONGOING')
+        ORDER BY order_num
+        LIMIT 1
+    </select>
+
+    <select id="selectNextStage" resultType="com.example.sports.entity.TournamentStage">
+        SELECT * FROM tournament_stage 
+        WHERE tournament_id = #{tournamentId} 
+        AND order_num > #{currentOrderNum}
+        ORDER BY order_num
+        LIMIT 1
+    </select>
+
+    <update id="update" parameterType="com.example.sports.entity.TournamentStage">
+        UPDATE tournament_stage
+        SET status = #{status},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
+</mapper>

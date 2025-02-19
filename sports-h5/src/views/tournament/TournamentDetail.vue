@@ -77,7 +77,7 @@
               v-if="tournament.status === 'REGISTERING'"
               type="primary" 
               block 
-              @click="updateStatus('ONGOING')"
+              @click="handleStartTournament"
             >
               开始比赛
             </van-button>
@@ -157,29 +157,7 @@
 
       <van-tab title="赛程" name="schedule">
         <div class="schedule-card">
-          <template v-if="matchRecords.length > 0">
-            <div v-for="match in matchRecords" :key="match.id" class="match-item" @click="goToMatchDetail(match.id)">
-              <div class="match-header">
-                <span class="match-time">{{ formatDateTime(match.startTime) }}</span>
-                <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
-              </div>
-              <div class="match-players">
-                <span class="player">{{ match.player1Name }}</span>
-                <span class="vs">VS</span>
-                <span class="player">{{ match.player2Name }}</span>
-              </div>
-              <div class="match-score" v-if="match.status !== 'PENDING'">
-                <span>{{ match.player1Score || 0 }}</span>
-                <span>:</span>
-                <span>{{ match.player2Score || 0 }}</span>
-              </div>
-              <div class="match-actions" v-if="hasPermission('match:manage') && match.status !== 'FINISHED'">
-                <van-button size="small" type="primary" @click.stop="openScoreDialog(match)">录入比分</van-button>
-                <van-button size="small" @click.stop="goToMatchDetail(match.id)">查看详情</van-button>
-              </div>
-            </div>
-          </template>
-          <van-empty v-else description="暂无赛程安排" />
+          <tournament-schedule :tournament-id="route.params.id" />
         </div>
       </van-tab>
     </van-tabs>
@@ -261,10 +239,11 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { getTournamentById, updateTournamentStatus, deleteTournament as deleteTournamentApi } from '@/api/tournament'
+import { getTournamentById, updateTournamentStatus, deleteTournament as deleteTournamentApi, startTournament } from '@/api/tournament'
 import { getRegistrations, register as registerApi, cancelRegistration as cancelRegistrationApi } from '@/api/registration'
 import { hasPermission } from '@/utils/permission'
 import { formatDate, getDateRange } from '@/utils/date'
+import TournamentSchedule from '@/components/tournament/TournamentSchedule.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -339,6 +318,23 @@ const updateStatus = async (status) => {
   } catch (error) {
     if (error === 'cancel') return
     showToast('状态更新失败')
+  }
+}
+// 开始比赛
+const handleStartTournament = async () => {
+  try {
+    await showDialog({
+      title: '确认开始比赛',
+      message: '确定要开始比赛吗？开始后将自动生成对阵表。',
+      showCancelButton: true,
+    })
+    
+    await startTournament(tournament.value.id)
+    showToast('比赛已开始')
+    await loadTournament()
+  } catch (error) {
+    if (error === 'cancel') return
+    showToast('开始比赛失败')
   }
 }
 

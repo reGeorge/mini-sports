@@ -2,7 +2,9 @@ package com.example.sports.controller;
 
 import com.example.sports.common.Result;
 import com.example.sports.entity.Tournament;
+import com.example.sports.entity.TournamentStage;
 import com.example.sports.service.TournamentService;
+import com.example.sports.service.TournamentStageService;
 import com.example.sports.vo.PageVO;
 import com.example.sports.vo.TournamentQueryVO;
 import org.slf4j.Logger;
@@ -10,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/tournaments")
@@ -19,6 +23,9 @@ public class TournamentController {
 
     @Autowired
     private TournamentService tournamentService;
+
+    @Autowired
+    private TournamentStageService tournamentStageService;
 
     /**
      * 获取赛事列表
@@ -93,4 +100,22 @@ public class TournamentController {
     public Result<Tournament> updateStatus(@PathVariable Long id, @RequestParam String status) {
         return Result.success(tournamentService.updateStatus(id, status));
     }
-} 
+
+    /**
+     * 开始赛事
+     */
+    @PostMapping("/{id}/start")
+    @PreAuthorize("hasAuthority('tournament:edit')")
+    public Result<List<TournamentStage>> startTournament(@PathVariable Long id) {
+        log.info("========== 开始赛事 ==========");
+        log.info("赛事ID: {}", id);
+        try {
+            List<TournamentStage> stages = tournamentStageService.startTournament(id);
+            log.info("赛事开始成功，生成的赛事阶段: {}", stages);
+            return Result.success(stages);
+        } catch (Exception e) {
+            log.error("开始赛事失败", e);
+            throw e;
+        }
+    }
+}

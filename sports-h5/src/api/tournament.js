@@ -51,3 +51,11 @@ export function updateTournamentStatus(id, status) {
     params: { status }
   })
 } 
+
+// 开始赛事
+export function startTournament(id) {
+  return request({
+    url: `/tournaments/${id}/start`,
+    method: 'post'
+  })
+}

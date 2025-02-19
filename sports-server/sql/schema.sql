@@ -86,10 +86,39 @@ CREATE TABLE tournament_registration (
     FOREIGN KEY (user_id) REFERENCES user(id)
 );
 
+-- 创建比赛阶段表
+CREATE TABLE tournament_stage (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tournament_id BIGINT NOT NULL COMMENT '赛事ID',
+    name VARCHAR(50) NOT NULL COMMENT '阶段名称',
+    type VARCHAR(20) NOT NULL COMMENT '阶段类型：ROUND_ROBIN-循环赛 KNOCKOUT-淘汰赛',
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING-待开始 ONGOING-进行中 FINISHED-已结束',
+    start_time DATETIME DEFAULT NULL COMMENT '开始时间',
+    end_time DATETIME DEFAULT NULL COMMENT '结束时间',
+    order_num INT NOT NULL DEFAULT 0 COMMENT '阶段顺序',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tournament_id) REFERENCES tournament(id)
+);
+
+-- 创建比赛分组表
+CREATE TABLE tournament_group (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    tournament_id BIGINT NOT NULL COMMENT '赛事ID',
+    stage_id BIGINT NOT NULL COMMENT '阶段ID',
+    name VARCHAR(50) NOT NULL COMMENT '分组名称',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tournament_id) REFERENCES tournament(id),
+    FOREIGN KEY (stage_id) REFERENCES tournament_stage(id)
+);
+
 -- 创建比赛记录表
 CREATE TABLE match_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tournament_id BIGINT NOT NULL COMMENT '赛事ID',
+    stage_id BIGINT NOT NULL COMMENT '阶段ID',
+    group_id BIGINT DEFAULT NULL COMMENT '分组ID',
     player1_id BIGINT NOT NULL COMMENT '选手1ID',
     player2_id BIGINT NOT NULL COMMENT '选手2ID',
     player1_score INT DEFAULT 0 COMMENT '选手1得分',
@@ -104,8 +133,10 @@ CREATE TABLE match_record (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (tournament_id) REFERENCES tournament(id),
+    FOREIGN KEY (stage_id) REFERENCES tournament_stage(id),
+    FOREIGN KEY (group_id) REFERENCES tournament_group(id),
     FOREIGN KEY (player1_id) REFERENCES user(id),
     FOREIGN KEY (player2_id) REFERENCES user(id),
     FOREIGN KEY (winner_id) REFERENCES user(id),
     FOREIGN KEY (referee_id) REFERENCES user(id)
-); 
+);

@@ -56,6 +56,11 @@ public class TournamentServiceImpl implements TournamentService {
     }
 
     @Override
+    public Tournament getTournamentById(Long id) {
+        return getById(id);
+    }
+
+    @Override
     @Transactional
     public Tournament create(Tournament tournament) {
         // 添加调试日志
@@ -88,9 +93,9 @@ public class TournamentServiceImpl implements TournamentService {
         // 检查赛事是否存在
         Tournament existing = getById(tournament.getId());
         
-        // 只能修改草稿状态的赛事
-        if (!"DRAFT".equals(existing.getStatus())) {
-            throw new BusinessException("只能修改草稿状态的赛事");
+        // 只允许修改草稿状态或报名中状态的赛事
+        if (!"DRAFT".equals(existing.getStatus()) && !"REGISTERING".equals(existing.getStatus())) {
+            throw new BusinessException("只能修改草稿状态或报名中状态的赛事");
         }
         
         // 更新时间
@@ -157,4 +162,4 @@ public class TournamentServiceImpl implements TournamentService {
             throw new BusinessException("非法的状态转换");
         }
     }
-} 
+}

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.sports.mapper.MatchRecordMapper">
+    <insert id="insert" parameterType="com.example.sports.entity.MatchRecord">
+        INSERT INTO match_record (
+            tournament_id,
+            stage_id,
+            group_id,
+            player1_id,
+            player2_id,
+            player1_score,
+            player2_score,
+            winner_id,
+            status,
+            start_time,
+            end_time,
+            created_at,
+            updated_at
+        ) VALUES (
+            #{tournamentId},
+            #{stageId},
+            #{groupId},
+            #{player1Id},
+            #{player2Id},
+            #{player1Score},
+            #{player2Score},
+            #{winnerId},
+            #{status},
+            #{startTime},
+            #{endTime},
+            #{createdAt},
+            #{updatedAt}
+        )
+    </insert>
+</mapper>

@@ -11,6 +11,13 @@ public interface TournamentService {
     PageVO<Tournament> getList(TournamentQueryVO queryVO);
 
     /**
+     * 根据ID获取赛事信息
+     * @param id 赛事ID
+     * @return 赛事信息
+     */
+    Tournament getTournamentById(Long id);
+
+    /**
      * 获取赛事详情
      */
     Tournament getById(Long id);
@@ -34,4 +41,4 @@ public interface TournamentService {
      * 更新赛事状态
      */
     Tournament updateStatus(Long id, String status);
-} 
+}
