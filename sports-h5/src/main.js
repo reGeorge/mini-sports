@@ -38,7 +38,8 @@ import {
   RadioGroup,
   Tabs,
   Tab,
-  Collapse
+  Collapse,
+  CollapseItem
 } from 'vant'
 
 const app = createApp(App)
@@ -76,7 +77,8 @@ const vantComponents = [
   RadioGroup,
   Tabs,
   Tab,
-  Collapse
+  Collapse,
+  CollapseItem
 ]
 
 vantComponents.forEach(component => {

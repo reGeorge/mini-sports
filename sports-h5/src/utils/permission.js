@@ -53,3 +53,17 @@ export function hasAllPermissions(permissionCodes) {
   const userPermissions = getUserPermissionCodes()
   return permissionCodes.every(code => userPermissions.includes(code))
 }
+
+/**
+ * 权限检查组合式函数
+ * @returns {Object} - 包含权限检查方法的对象
+ */
+export function usePermission() {
+  return {
+    hasPermission,
+    hasRole,
+    hasAnyPermission,
+    hasAllPermissions,
+    getUserPermissionCodes
+  }
+}

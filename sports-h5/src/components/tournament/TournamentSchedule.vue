@@ -6,7 +6,7 @@
       
       <!-- 小组列表 -->
       <div class="groups-container">
-        <van-collapse v-model:active-names="activeGroups" accordion>
+        <van-collapse v-model="activeGroups" accordion>
           <van-collapse-item 
             v-for="group in groups" 
             :key="group.id" 
@@ -15,19 +15,22 @@
             class="group-card"
           >
             <div class="group-matches">
-              <div v-for="(match, index) in group.matches" :key="match.id" class="match-item">
+              <div v-for="(match, index) in group.matches" :key="match.id" class="match-item" @click="onMatchClick(match)">
                 <div class="match-index">{{ index + 1 }}</div>
                 <div class="match-players">
-                  <span class="player">{{ match.player1Name }}</span>
-                  <span class="vs">VS</span>
-                  <span class="player">{{ match.player2Name }}</span>
+                  <span class="player" @click.stop="onPlayerClick(match.player1Id, match.player1Name, match.player1Points, match.player1Level, match.player1GripType, match.player1RacketConfig)">{{ match.player1Name }}</span>
+                  <div class="match-info">
+                        <div class="match-score">
+                            <van-tag :type="getScoreType(match.player1Score, match.player2Score)" class="score-tag">
+                                <span>{{ match.player1Score || 0 }}</span>
+                                <span>:</span>
+                                <span>{{ match.player2Score || 0 }}</span>
+                            </van-tag>
+                        </div>    
+                    </div>
+                    <span class="player" @click.stop="onPlayerClick(match.player2Id, match.player2Name, match.player2Points, match.player2Level, match.player2GripType, match.player2RacketConfig)">{{ match.player2Name }}</span>
                 </div>
-                <div class="match-score" v-if="match.status !== 'PENDING'">
-                  <span>{{ match.player1Score || 0 }}</span>
-                  <span>:</span>
-                  <span>{{ match.player2Score || 0 }}</span>
-                </div>
-                <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
+                <van-tag class="status-tag" :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
               </div>
             </div>
           </van-collapse-item>
@@ -39,7 +42,7 @@
     <div v-if="knockoutStage" class="stage-section">
       <h3 class="stage-title">淘汰赛</h3>
       <div class="knockout-matches">
-        <div v-for="match in knockoutMatches" :key="match.id" class="match-item">
+        <div class="match-item" v-for="match in knockoutMatches" :key="match.id" @click="onMatchClick(match)">
           <div class="match-players">
             <span class="player">{{ match.player1Name }}</span>
             <span class="vs">VS</span>
@@ -50,20 +53,84 @@
             <span>:</span>
             <span>{{ match.player2Score || 0 }}</span>
           </div>
-          <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
+          <van-tag class="status-tag" :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
         </div>
       </div>
     </div>
+    <!-- 比分设置对话框 -->
+    <van-dialog
+      v-model:show="showScoreDialog"
+      title="设置比分"
+      show-cancel-button
+      @confirm="confirmSetScore"
+    >
+      <div class="score-dialog-content">
+        <van-field
+          v-model="player1Score"
+          type="number"
+          :label="selectedMatch?.player1Name"
+          placeholder="请输入比分"
+        />
+        <van-field
+          v-model="player2Score"
+          type="number"
+          :label="selectedMatch?.player2Name"
+          placeholder="请输入比分"
+        />
+      </div>
+    </van-dialog>
+    <van-dialog
+      v-model:show="showUserDetailDialog"
+      title="选手详情"
+      width="90%"
+    >
+      <div class="user-detail-content" v-if="selectedUser">
+        <div class="detail-item">
+          <span class="label">ID：</span>
+          <span class="value">{{ selectedUser.id }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">昵称：</span>
+          <span class="value">{{ selectedUser.nickname }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">当前积分：</span>
+          <span class="value">{{ selectedUser.points || 0 }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">水平级别：</span>
+          <span class="value">{{ selectedUser.level || 'BEGINNER' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">握拍方式：</span>
+          <span class="value">{{ selectedUser.gripType || '未设置' }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="label">球拍配置：</span>
+          <span class="value">{{ selectedUser.racketConfig || '未设置' }}</span>
+        </div>
+      </div>
+    </van-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { showToast, Collapse, CollapseItem } from 'vant'
+import { showToast, Collapse, CollapseItem, Dialog, Field } from 'vant'
+import { useRouter } from 'vue-router'
 import request from '@/utils/request'
+import { usePermission } from '@/utils/permission'
 
-// 用于控制分组折叠面板的展开状态，初始值为空数组表示全部折叠
-const activeGroups = ref([])
+// 用于控制分组折叠面板的展开状态，初始值为空字符串表示全部折叠
+const activeGroups = ref('')
+const showScoreDialog = ref(false)
+const showUserDetailDialog = ref(false)
+const selectedMatch = ref(null)
+const selectedUser = ref(null)
+const player1Score = ref('')
+const player2Score = ref('')
+const { hasPermission } = usePermission()
+const router = useRouter()
 
 const props = defineProps({
   tournamentId: {
@@ -168,6 +235,58 @@ const getMatchStatusText = (status) => {
   }
 }
 
+// 点击选手名称时的处理函数
+const onPlayerClick = (id, nickname, points, level, gripType, racketConfig) => {
+  selectedUser.value = {
+    id,
+    nickname,
+    points: points || 0,
+    level: level || 'BEGINNER',
+    gripType: gripType || '未设置',
+    racketConfig: racketConfig || '未设置'
+  }
+  showUserDetailDialog.value = true
+}
+
+// 点击比赛项目时的处理函数
+const onMatchClick = (match) => {
+  if (hasPermission('match:score:update')) {
+    selectedMatch.value = match
+    player1Score.value = match.player1Score?.toString() || ''
+    player2Score.value = match.player2Score?.toString() || ''
+    showScoreDialog.value = true
+  }
+}
+
+// 确认设置比分
+const confirmSetScore = async () => {
+  if (!player1Score.value || !player2Score.value) {
+    showToast('请输入双方比分')
+    return
+  }
+
+  try {
+    await request({
+      url: `/tournaments/${props.tournamentId}/matches/${selectedMatch.value.id}/score`,
+      method: 'put',
+      data: {
+        player1Score: parseInt(player1Score.value),
+        player2Score: parseInt(player2Score.value)
+      }
+    })
+    showToast('比分设置成功')
+    showScoreDialog.value = false
+    loadStages() // 刷新赛程数据
+  } catch (error) {
+    showToast('比分设置失败')
+  }
+}
+
+// 获取比分标签样式
+const getScoreType = (score1, score2) => {
+  if (!score1 && !score2) return 'primary'
+  return parseInt(score1) > parseInt(score2) ? 'success' : 'warning'
+}
 onMounted(() => {
   loadStages()
 })
@@ -195,18 +314,22 @@ onMounted(() => {
 }
 
 .group-card {
-  margin-bottom: 8px;
-  background: #fff;
-  border-radius: 8px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 4px;
 }
 
 :deep(.van-collapse-item__content) {
   padding: 12px;
+  background: #f7f8fa;
 }
 
 :deep(.van-collapse-item__title) {
   font-weight: bold;
   color: #323233;
+  background: #f7f8fa;
 }
 
 .group-header {
@@ -222,13 +345,20 @@ onMounted(() => {
 }
 
 .match-item {
-  background: #f7f8fa;
-  border-radius: 6px;
+  background: #ffffff;
+  border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.match-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .match-index {
@@ -247,33 +377,47 @@ onMounted(() => {
 .match-players {
   flex: 1;
   display: flex;
-  flex-direction: row;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .player {
-  color: #323233;
   font-size: 14px;
+  color: #323233;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 4px 8px;
+}
+
+.player:hover {
+  color: #1989fa;
+  transform: translateY(-1px);
+}
+
+.match-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .vs {
   color: #969799;
-  font-size: 12px;
-  margin: 4px 0;
+  font-size: 14px;
+  margin: 0 8px;
 }
 
 .match-score {
+  font-size: 16px;
+  font-weight: 500;
+  color: #1989fa;
   display: flex;
   align-items: center;
   gap: 4px;
-  margin: 4px 0;
-  font-size: 14px;
-  font-weight: bold;
-  color: #1989fa;
 }
 
 .match-score span {
-  margin: 0 4px;
+  margin: 0 2px;
 }
 
 .knockout-matches {
@@ -281,5 +425,44 @@ onMounted(() => {
   border-radius: 8px;
   padding: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.score-dialog-content {
+  padding: 20px 16px;
+}
+.user-detail-content {
+  padding: 20px;
+}
+
+.detail-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.detail-item .label {
+  color: #646566;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.detail-item .value {
+  color: #323233;
+  flex: 1;
+}
+.score-tag {
+  padding: 2px 4px;
+  font-weight: bold;
+}
+
+.score-tag :deep(.van-tag__content) {
+  font-size: 10px;
+}
+
+.status-tag {
+  padding: 2px 4px;
+  font-weight: bold;
 }
 </style>

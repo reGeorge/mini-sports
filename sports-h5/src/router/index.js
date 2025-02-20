@@ -74,6 +74,11 @@ const routes = [
     component: () => import('@/views/points/PointsSearch.vue')
   },
   {
+    path: '/user/points',
+    name: 'UserPoints',
+    component: () => import('@/views/points/PointsSearch.vue')
+  },
+  {
     path: '/admin',
     name: 'AdminHome',
     component: () => import('@/views/admin/AdminHome.vue')
@@ -100,4 +105,4 @@ const router = createRouter({
   routes
 })
 
-export default router 
+export default router
