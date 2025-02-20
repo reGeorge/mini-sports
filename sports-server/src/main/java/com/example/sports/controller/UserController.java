@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.security.Permission;
 import java.time.LocalDateTime;
 
 import java.util.List;
@@ -29,8 +28,6 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.management.relation.Role;
 
 @Slf4j
 @RestController

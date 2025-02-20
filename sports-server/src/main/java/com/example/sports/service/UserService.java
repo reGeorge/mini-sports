@@ -14,4 +14,5 @@ public interface UserService {
     User save(User user);
     void updatePoints(UpdatePointsDTO updatePointsDTO);
     User getUserInfo(Long userId);
+    User getUserById(Long player1Id);
 }

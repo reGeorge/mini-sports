@@ -32,4 +32,47 @@
             #{updatedAt}
         )
     </insert>
+
+    <select id="selectByStageId" resultType="com.example.sports.entity.MatchRecord">
+        SELECT 
+            id,
+            tournament_id,
+            stage_id,
+            group_id,
+            player1_id,
+            player2_id,
+            player1_score,
+            player2_score,
+            winner_id,
+            status,
+            start_time,
+            end_time,
+            created_at,
+            updated_at
+        FROM match_record
+        WHERE stage_id = #{stageId}
+        ORDER BY created_at ASC
+    </select>
+
+    <select id="selectByTournamentAndStage" resultType="com.example.sports.entity.MatchRecord">
+        SELECT 
+            id,
+            tournament_id,
+            stage_id,
+            group_id,
+            player1_id,
+            player2_id,
+            player1_score,
+            player2_score,
+            winner_id,
+            status,
+            start_time,
+            end_time,
+            created_at,
+            updated_at
+        FROM match_record
+        WHERE tournament_id = #{tournamentId}
+        AND stage_id = #{stageId}
+        ORDER BY created_at ASC
+    </select>
 </mapper>

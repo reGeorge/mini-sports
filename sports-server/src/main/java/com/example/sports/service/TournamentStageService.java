@@ -1,6 +1,8 @@
 package com.example.sports.service;
 
 import com.example.sports.entity.TournamentStage;
+import com.example.sports.vo.TournamentStageVO;
+
 import java.util.List;
 
 public interface TournamentStageService {

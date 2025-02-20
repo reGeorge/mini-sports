@@ -6,26 +6,32 @@
       
       <!-- 小组列表 -->
       <div class="groups-container">
-        <div v-for="group in groups" :key="group.id" class="group-card">
-          <div class="group-header">
-            <h4>{{ group.name }}</h4>
-          </div>
-          <div class="group-matches">
-            <div v-for="match in group.matches" :key="match.id" class="match-item">
-              <div class="match-players">
-                <span class="player">{{ match.player1Name }}</span>
-                <span class="vs">VS</span>
-                <span class="player">{{ match.player2Name }}</span>
+        <van-collapse v-model:active-names="activeGroups" accordion>
+          <van-collapse-item 
+            v-for="group in groups" 
+            :key="group.id" 
+            :name="group.id"
+            :title="group.name"
+            class="group-card"
+          >
+            <div class="group-matches">
+              <div v-for="(match, index) in group.matches" :key="match.id" class="match-item">
+                <div class="match-index">{{ index + 1 }}</div>
+                <div class="match-players">
+                  <span class="player">{{ match.player1Name }}</span>
+                  <span class="vs">VS</span>
+                  <span class="player">{{ match.player2Name }}</span>
+                </div>
+                <div class="match-score" v-if="match.status !== 'PENDING'">
+                  <span>{{ match.player1Score || 0 }}</span>
+                  <span>:</span>
+                  <span>{{ match.player2Score || 0 }}</span>
+                </div>
+                <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
               </div>
-              <div class="match-score" v-if="match.status !== 'PENDING'">
-                <span>{{ match.player1Score || 0 }}</span>
-                <span>:</span>
-                <span>{{ match.player2Score || 0 }}</span>
-              </div>
-              <van-tag :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
             </div>
-          </div>
-        </div>
+          </van-collapse-item>
+        </van-collapse>
       </div>
     </div>
 
@@ -53,8 +59,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { showToast } from 'vant'
+import { showToast, Collapse, CollapseItem } from 'vant'
 import request from '@/utils/request'
+
+// 用于控制分组折叠面板的展开状态，初始值为空数组表示全部折叠
+const activeGroups = ref([])
 
 const props = defineProps({
   tournamentId: {
@@ -80,11 +89,27 @@ const loadStages = async () => {
     groupStage.value = res.data.find(stage => stage.type === 'GROUP')
     knockoutStage.value = res.data.find(stage => stage.type === 'KNOCKOUT')
     
-    if (groupStage.value) {
-      await loadGroups()
+    // 处理小组赛数据
+    if (groupStage.value && groupStage.value.matches) {
+      // 根据groupId对matches进行分组
+      const groupedMatches = groupStage.value.matches.reduce((acc, match) => {
+        if (!acc[match.groupId]) {
+          acc[match.groupId] = {
+            id: match.groupId,
+            name: `Group ${String.fromCharCode(65 + Object.keys(acc).length)}`,
+            matches: []
+          }
+        }
+        acc[match.groupId].matches.push(match)
+        return acc
+      }, {})
+      
+      groups.value = Object.values(groupedMatches)
     }
-    if (knockoutStage.value) {
-      await loadKnockoutMatches()
+    
+    // 处理淘汰赛数据
+    if (knockoutStage.value && knockoutStage.value.matches) {
+      knockoutMatches.value = knockoutStage.value.matches
     }
   } catch (error) {
     showToast('获取赛程信息失败')
@@ -165,16 +190,23 @@ onMounted(() => {
 }
 
 .groups-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  display: block;
+  width: 100%;
 }
 
 .group-card {
+  margin-bottom: 8px;
   background: #fff;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.van-collapse-item__content) {
+  padding: 12px;
+}
+
+:deep(.van-collapse-item__title) {
+  font-weight: bold;
+  color: #323233;
 }
 
 .group-header {
@@ -194,34 +226,50 @@ onMounted(() => {
   border-radius: 6px;
   padding: 12px;
   margin-bottom: 8px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.match-index {
+  width: 24px;
+  height: 24px;
+  background-color: #f2f3f5;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
 }
 
 .match-players {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 8px;
+  flex-direction: row;
+  gap: 8px;
 }
 
 .player {
-  flex: 1;
-  text-align: center;
   color: #323233;
+  font-size: 14px;
 }
 
 .vs {
-  margin: 0 12px;
   color: #969799;
-  font-size: 14px;
+  font-size: 12px;
+  margin: 4px 0;
 }
 
 .match-score {
   display: flex;
   align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  font-size: 16px;
+  gap: 4px;
+  margin: 4px 0;
+  font-size: 14px;
   font-weight: bold;
+  color: #1989fa;
 }
 
 .match-score span {

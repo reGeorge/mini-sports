@@ -3,7 +3,6 @@ package com.example.sports.entity;
 import lombok.Data;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.example.sports.entity.Permission;
 
 @Data
 public class User {

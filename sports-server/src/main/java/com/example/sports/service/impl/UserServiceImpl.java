@@ -192,4 +192,18 @@ public class UserServiceImpl implements UserService {
             
         return user;
     }
+
+    @Override
+    public User getUserById(Long userId) {
+        if (userId == null) {
+            throw new RuntimeException("用户ID不能为空");
+        }
+        
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        
+        return user;
+    }
 }

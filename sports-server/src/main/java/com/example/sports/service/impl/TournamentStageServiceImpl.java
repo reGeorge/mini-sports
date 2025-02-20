@@ -6,6 +6,7 @@ import com.example.sports.entity.TournamentGroup;
 import com.example.sports.entity.MatchRecord;
 import com.example.sports.entity.TournamentRegistration;
 import com.example.sports.service.TournamentStageService;
+import com.example.sports.service.UserService;
 import com.example.sports.vo.TournamentStageVO;
 import com.example.sports.service.TournamentService;
 import com.example.sports.mapper.TournamentStageMapper;
@@ -17,7 +18,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
@@ -36,6 +40,9 @@ public class TournamentStageServiceImpl implements TournamentStageService {
 
     @Autowired
     private MatchRecordMapper matchRecordMapper;
+
+    @Autowired
+    private UserService userService;
 
     @Autowired
     private TournamentService tournamentService;
@@ -79,7 +86,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
 
         // 3.2 生成分组
         int totalPlayers = registrations.size();
-        int groupSize = 4; // 每组4人
+        int groupSize = 6; // 每组6人
         int numGroups = (totalPlayers + groupSize - 1) / groupSize; // 向上取整
 
         for (int i = 0; i < numGroups; i++) {
@@ -98,6 +105,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
             );
 
             // 生成组内循环赛对阵表
+            List<MatchRecord> matches = new ArrayList<>();
             for (int j = 0; j < groupPlayers.size(); j++) {
                 for (int k = j + 1; k < groupPlayers.size(); k++) {
                     MatchRecord match = new MatchRecord();
@@ -111,8 +119,14 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                     match.setPlayer2Score(0);
                     match.setCreatedAt(LocalDateTime.now());
                     match.setUpdatedAt(LocalDateTime.now());
-                    matchRecordMapper.insert(match);
+                    matches.add(match);
                 }
+            }
+
+            // 优化对阵顺序，确保同一选手不会连续比赛
+            List<MatchRecord> optimizedMatches = optimizeMatchOrder(matches);
+            for (MatchRecord match : optimizedMatches) {
+                matchRecordMapper.insert(match);
             }
         }
 
@@ -153,13 +167,54 @@ public class TournamentStageServiceImpl implements TournamentStageService {
     public List<TournamentStageVO> getStagesByTournamentId(Long tournamentId) {
         List<TournamentStage> stages = tournamentStageMapper.selectByTournamentId(tournamentId);
         return stages.stream()
-                .map(TournamentStageVO::fromEntity)
+                .<TournamentStageVO>map(stage -> {
+                    List<MatchRecord> matches = matchRecordMapper.selectByTournamentAndStage(tournamentId, stage.getId());
+                    return TournamentStageVO.fromEntity(stage, matches != null && !matches.isEmpty() ? matches : null, userService);
+                })
                 .collect(Collectors.toList());
     }
 
     @Override
     public TournamentStage getCurrentStage(Long tournamentId) {
         return tournamentStageMapper.selectCurrentStage(tournamentId);
+    }
+
+    /**
+     * 优化对阵顺序，确保同一选手不会连续比赛
+     * @param matches 原始对阵列表
+     * @return 优化后的对阵列表
+     */
+    private List<MatchRecord> optimizeMatchOrder(List<MatchRecord> matches) {
+        List<MatchRecord> optimized = new ArrayList<>();
+        List<MatchRecord> remaining = new ArrayList<>(matches);
+        Map<Long, Integer> playerLastMatchIndex = new HashMap<>();
+
+        while (!remaining.isEmpty()) {
+            MatchRecord bestMatch = null;
+            int bestGap = -1;
+
+            for (MatchRecord match : remaining) {
+                // 计算两个选手的最近比赛间隔
+                int player1LastMatch = playerLastMatchIndex.getOrDefault(match.getPlayer1Id(), -1);
+                int player2LastMatch = playerLastMatchIndex.getOrDefault(match.getPlayer2Id(), -1);
+                int currentGap = optimized.size() - Math.max(player1LastMatch, player2LastMatch);
+
+                // 选择间隔最大的比赛
+                if (bestMatch == null || currentGap > bestGap) {
+                    bestMatch = match;
+                    bestGap = currentGap;
+                }
+            }
+
+            // 更新选手的最近比赛索引
+            playerLastMatchIndex.put(bestMatch.getPlayer1Id(), optimized.size());
+            playerLastMatchIndex.put(bestMatch.getPlayer2Id(), optimized.size());
+
+            optimized.add(bestMatch);
+            remaining.remove(bestMatch);
+        }
+
+        return optimized;
     }
 
     @Override

@@ -37,4 +37,9 @@ public interface MatchRecordMapper {
      * 删除比赛记录
      */
     void deleteById(@Param("id") Long id);
+
+    /**
+     * 根据赛事阶段ID查询比赛记录列表
+     */
+    List<MatchRecord> selectByStageId(@Param("stageId") Long stageId);
 }

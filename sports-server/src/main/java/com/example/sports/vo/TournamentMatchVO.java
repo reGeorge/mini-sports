@@ -1,5 +1,10 @@
 package com.example.sports.vo;
 
+import com.example.sports.entity.MatchRecord;
+import com.example.sports.entity.User;
+import com.example.sports.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+
 public class TournamentMatchVO {
     private Long id;
     private Long player1Id;
@@ -81,5 +86,55 @@ public class TournamentMatchVO {
 
     public void setWinner(String winner) {
         this.winner = winner;
+    }
+
+    
+    public TournamentMatchVO() {
+    }
+
+    private UserService userService;
+
+    @Autowired
+    public TournamentMatchVO(UserService userService) {
+        this.userService = userService;
+    }
+
+    public static TournamentMatchVO fromEntity(MatchRecord record, UserService userService) {
+        if (record == null) {
+            return null;
+        }
+
+        TournamentMatchVO vo = new TournamentMatchVO();
+        vo.setId(record.getId());
+        vo.setPlayer1Id(record.getPlayer1Id());
+        vo.setPlayer2Id(record.getPlayer2Id());
+        vo.setPlayer1Score(record.getPlayer1Score());
+        vo.setPlayer2Score(record.getPlayer2Score());
+        vo.setStatus(record.getStatus());
+
+        // 获取并设置选手姓名
+        if (record.getPlayer1Id() != null) {
+            User player1 = userService.getUserById(record.getPlayer1Id());
+            if (player1 != null) {
+                vo.setPlayer1Name(player1.getNickname());
+            }
+        }
+        if (record.getPlayer2Id() != null) {
+            User player2 = userService.getUserById(record.getPlayer2Id());
+            if (player2 != null) {
+                vo.setPlayer2Name(player2.getNickname());
+            }
+        }
+
+        // 设置获胜者
+        if (record.getWinnerId() != null) {
+            if (record.getWinnerId().equals(record.getPlayer1Id())) {
+                vo.setWinner("PLAYER1");
+            } else if (record.getWinnerId().equals(record.getPlayer2Id())) {
+                vo.setWinner("PLAYER2");
+            }
+        }
+
+        return vo;
     }
 }

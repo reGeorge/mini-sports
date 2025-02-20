@@ -6,16 +6,12 @@ import com.example.sports.mapper.UserMapper;
 import com.example.sports.mapper.PointsRecordMapper;
 import com.example.sports.service.PointsService;
 import com.example.sports.vo.PageVO;
-import com.github.pagehelper.Page;
-import com.github.pagehelper.PageHelper;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Service
 public class PointsServiceImpl implements PointsService {
