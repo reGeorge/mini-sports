@@ -2,7 +2,10 @@
   <div class="tournament-schedule">
     <!-- 小组赛阶段 -->
     <div v-if="groupStage" class="stage-section">
-      <h3 class="stage-title">小组赛</h3>
+      <div class="stage-header">
+        <h3 class="stage-title">小组赛</h3>
+        <van-tag class="stage-status" :type="getStageStatusType(groupStage.status)">{{ getStageStatusText(groupStage.status) }}</van-tag>
+      </div>
       
       <!-- 小组列表 -->
       <div class="groups-container">
@@ -21,7 +24,11 @@
                   <span class="player" @click.stop="onPlayerClick(match.player1Id, match.player1Name, match.player1Points, match.player1Level, match.player1GripType, match.player1RacketConfig)">{{ match.player1Name }}</span>
                   <div class="match-info">
                         <div class="match-score">
-                            <van-tag :type="getScoreType(match.player1Score, match.player2Score)" class="score-tag">
+                            <van-tag 
+                              :type="getScoreType(match.player1Score, match.player2Score)" 
+                              class="score-tag"
+                              @click.stop="onScoreClick(match)"
+                            >
                                 <span>{{ match.player1Score || 0 }}</span>
                                 <span>:</span>
                                 <span>{{ match.player2Score || 0 }}</span>
@@ -40,20 +47,31 @@
 
     <!-- 淘汰赛阶段 -->
     <div v-if="knockoutStage" class="stage-section">
-      <h3 class="stage-title">淘汰赛</h3>
+      <div class="stage-header">
+        <h3 class="stage-title">淘汰赛</h3>
+        <van-tag class="stage-status" :type="getStageStatusType(knockoutStage.status)">{{ getStageStatusText(knockoutStage.status) }}</van-tag>
+      </div>
       <div class="knockout-matches">
-        <div class="match-item" v-for="match in knockoutMatches" :key="match.id" @click="onMatchClick(match)">
+        <div v-for="(match, index) in knockoutMatches" :key="match.id" class="match-item" @click="onMatchClick(match)">
+          <div class="match-index">{{ index + 1 }}</div>
           <div class="match-players">
-            <span class="player">{{ match.player1Name }}</span>
-            <span class="vs">VS</span>
-            <span class="player">{{ match.player2Name }}</span>
+            <span class="player" @click.stop="onPlayerClick(match.player1Id, match.player1Name, match.player1Points, match.player1Level, match.player1GripType, match.player1RacketConfig)">{{ match.player1Name }}</span>
+            <div class="match-info">
+              <div class="match-score">
+                <van-tag 
+                  :type="getScoreType(match.player1Score, match.player2Score)" 
+                  class="score-tag"
+                  @click.stop="onScoreClick(match)"
+                >
+                  <span>{{ match.player1Score || 0 }}</span>
+                  <span>:</span>
+                  <span>{{ match.player2Score || 0 }}</span>
+                </van-tag>
+              </div>    
+            </div>
+            <span class="player" @click.stop="onPlayerClick(match.player2Id, match.player2Name, match.player2Points, match.player2Level, match.player2GripType, match.player2RacketConfig)">{{ match.player2Name }}</span>
           </div>
-          <div class="match-score" v-if="match.status !== 'PENDING'">
-            <span>{{ match.player1Score || 0 }}</span>
-            <span>:</span>
-            <span>{{ match.player2Score || 0 }}</span>
-          </div>
-          <van-tag class="status-tag" :type="getMatchStatusType(match.status)">{{ getMatchStatusText(match.status) }}</van-tag>
+          <van-tag class="status-tag" :type="getMatchStatusType('ONGOING')">{{ getMatchStatusText('ONGOING') }}</van-tag>
         </div>
       </div>
     </div>
@@ -221,6 +239,32 @@ const getMatchStatusType = (status) => {
   }
 }
 
+// 获取赛事阶段状态样式
+const getStageStatusType = (status) => {
+  switch (status) {
+    case 'FINISHED':
+      return 'success'
+    case 'ONGOING':
+      return 'warning'
+    default:
+      return 'primary'
+  }
+}
+
+// 获取赛事阶段状态文本
+const getStageStatusText = (status) => {
+  switch (status) {
+    case 'PENDING':
+      return '未开始'
+    case 'ONGOING':
+      return '进行中'
+    case 'FINISHED':
+      return '已结束'
+    default:
+      return '未知'
+  }
+}
+
 // 获取比赛状态文本
 const getMatchStatusText = (status) => {
   switch (status) {
@@ -250,11 +294,19 @@ const onPlayerClick = (id, nickname, points, level, gripType, racketConfig) => {
 
 // 点击比赛项目时的处理函数
 const onMatchClick = (match) => {
-  if (hasPermission('match:score:update')) {
+  // 点击整个比赛项目时不再处理比分设置
+  // 可以在这里添加其他比赛详情相关的逻辑
+}
+
+// 点击比分标签时的处理函数
+const onScoreClick = (match) => {
+  if (hasPermission('match:score')) {
     selectedMatch.value = match
     player1Score.value = match.player1Score?.toString() || ''
     player2Score.value = match.player2Score?.toString() || ''
     showScoreDialog.value = true
+  } else {
+    showToast('您没有权限设置比分');
   }
 }
 
@@ -464,5 +516,17 @@ onMounted(() => {
 .status-tag {
   padding: 2px 4px;
   font-weight: bold;
+}
+.stage-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stage-status {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 </style>

@@ -38,4 +38,10 @@
     <delete id="deleteById">
         DELETE FROM tournament_group WHERE id = #{id}
     </delete>
+
+    <select id="selectByStageId" resultType="com.example.sports.entity.TournamentGroup">
+        SELECT * FROM tournament_group 
+        WHERE stage_id = #{stageId}
+        ORDER BY id
+    </select>
 </mapper>

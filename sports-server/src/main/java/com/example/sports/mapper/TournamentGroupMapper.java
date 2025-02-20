@@ -32,4 +32,9 @@ public interface TournamentGroupMapper {
      * 删除分组
      */
     void deleteById(@Param("id") Long id);
+
+    /**
+     * 根据阶段ID查询分组列表
+     */
+    List<TournamentGroup> selectByStageId(@Param("stageId") Long stageId);
 }

@@ -41,4 +41,6 @@ public interface TournamentStageService {
      * @return 下一个阶段
      */
     TournamentStage moveToNextStage(Long tournamentId);
+
+    void updateMatchScore(Long tournamentId, Long matchId, Integer player1Score, Integer player2Score);
 }

@@ -247,4 +247,226 @@ public class TournamentStageServiceImpl implements TournamentStageService {
 
         return null;
     }
+
+    @Override
+    @Transactional
+    public void updateMatchScore(Long tournamentId, Long matchId, Integer player1Score, Integer player2Score) {
+        // 1. 验证比分是否合法
+        if (player1Score < 0 || player2Score < 0) {
+            throw new IllegalArgumentException("比分不能为负数");
+        }
+
+        // 2. 获取并验证比赛记录
+        MatchRecord match = matchRecordMapper.selectById(matchId);
+        if (match == null) {
+            throw new IllegalArgumentException("比赛记录不存在");
+        }
+        if (!match.getTournamentId().equals(tournamentId)) {
+            throw new IllegalArgumentException("比赛记录与赛事不匹配");
+        }
+        // if ("FINISHED".equals(match.getStatus())) {
+        //     throw new IllegalStateException("比赛已结束，无法更新比分");
+        // }
+
+        // 3. 更新比分
+        match.setPlayer1Score(player1Score);
+        match.setPlayer2Score(player2Score);
+        match.setStatus("FINISHED");
+        match.setUpdatedAt(LocalDateTime.now());
+
+        // 4. 保存更新
+        matchRecordMapper.update(match);
+
+        // 5. 检查并更新小组赛阶段状态
+        TournamentStage stage = tournamentStageMapper.selectById(match.getStageId());
+        if (stage != null && "GROUP".equals(stage.getType())) {
+            // 获取该阶段所有比赛
+            List<MatchRecord> stageMatches = matchRecordMapper.selectByTournamentAndStage(tournamentId, stage.getId());
+            
+            // 检查是否所有比赛都已完成
+            boolean allFinished = stageMatches.stream()
+                    .allMatch(m -> "FINISHED".equals(m.getStatus()));
+            
+            // 如果所有比赛都完成，更新阶段状态为已结束，并生成出线名单
+            if (allFinished) {
+                stage.setStatus("FINISHED");
+                stage.setUpdatedAt(LocalDateTime.now());
+                tournamentStageMapper.update(stage);
+
+                // 生成小组赛成绩和出线名单
+                generateKnockoutMatches(tournamentId, stage.getId());
+            }
+        }
+    }
+
+    /**
+     * 生成淘汰赛对阵表
+     * @param tournamentId 赛事ID
+     * @param groupStageId 小组赛阶段ID
+     */
+    private void generateKnockoutMatches(Long tournamentId, Long groupStageId) {
+        log.info("开始生成淘汰赛对阵表，赛事ID: {}, 小组赛阶段ID: {}", tournamentId, groupStageId);
+
+        // 1. 获取所有小组的比赛记录
+        List<TournamentGroup> groups = tournamentGroupMapper.selectByStageId(groupStageId);
+        List<PlayerStats> allQualifiedPlayers = new ArrayList<>();
+        log.info("获取到 {} 个小组", groups.size());
+
+        // 2. 计算每个小组的选手成绩并选出前4名
+        for (TournamentGroup group : groups) {
+            log.info("开始处理小组 {} 的成绩统计", group.getName());
+            List<MatchRecord> groupMatches = matchRecordMapper.selectByGroupId(group.getId());
+            Map<Long, PlayerStats> playerStatsMap = new HashMap<>();
+
+            // 2.1 统计每个选手的比赛成绩
+            for (MatchRecord match : groupMatches) {
+                updatePlayerStats(playerStatsMap, match);
+            }
+
+            // 2.2 将统计结果转换为列表并排序
+            List<PlayerStats> sortedPlayers = new ArrayList<>(playerStatsMap.values());
+            sortedPlayers.sort((a, b) -> {
+                if (a.getPoints() != b.getPoints()) {
+                    return b.getPoints() - a.getPoints(); // 按积分降序
+                }
+                if (a.getScoreDiff() != b.getScoreDiff()) {
+                    return b.getScoreDiff() - a.getScoreDiff(); // 按得失分差降序
+                }
+                return b.getTotalScore() - a.getTotalScore(); // 按总得分降序
+            });
+
+            // 输出小组排名
+            log.info("小组 {} 排名情况：", group.getName());
+            for (int i = 0; i < sortedPlayers.size(); i++) {
+                PlayerStats player = sortedPlayers.get(i);
+                log.info("第{}名 - 选手ID: {}, 积分: {}, 胜场: {}, 总得分: {}, 得失分差: {}",
+                    i + 1, player.getPlayerId(), player.getPoints(), player.getWins(),
+                    player.getTotalScore(), player.getScoreDiff());
+            }
+
+            // 2.3 选取前4名选手
+            int qualifiedCount = Math.min(4, sortedPlayers.size());
+            allQualifiedPlayers.addAll(sortedPlayers.subList(0, qualifiedCount));
+            log.info("小组 {} 晋级 {} 名选手", group.getName(), qualifiedCount);
+        }
+
+        // 3. 获取淘汰赛阶段
+        TournamentStage knockoutStage = tournamentStageMapper.selectNextStage(tournamentId, 1);
+        if (knockoutStage == null || !"KNOCKOUT".equals(knockoutStage.getType())) {
+            log.error("未找到淘汰赛阶段或阶段类型错误");
+            return;
+        }
+
+        // 4. 生成淘汰赛对阵表
+        List<MatchRecord> knockoutMatches = generateKnockoutPairings(allQualifiedPlayers, tournamentId, knockoutStage.getId());
+        log.info("生成淘汰赛对阵表完成，共 {} 场比赛", knockoutMatches.size());
+        
+        // 5. 保存淘汰赛对阵记录
+        for (MatchRecord match : knockoutMatches) {
+            matchRecordMapper.insert(match);
+            log.info("创建淘汰赛比赛记录：选手1 ID: {} vs 选手2 ID: {}, 轮次: {}",
+                match.getPlayer1Id(), match.getPlayer2Id(), match.getRound());
+        }
+        
+        log.info("淘汰赛对阵表生成完成");
+    }
+
+    /**
+     * 更新选手统计数据
+     */
+    private void updatePlayerStats(Map<Long, PlayerStats> statsMap, MatchRecord match) {
+        // 处理选手1的统计
+        PlayerStats player1Stats = statsMap.computeIfAbsent(match.getPlayer1Id(), k -> new PlayerStats(k));
+        player1Stats.addMatch(match.getPlayer1Score(), match.getPlayer2Score());
+
+        // 处理选手2的统计
+        PlayerStats player2Stats = statsMap.computeIfAbsent(match.getPlayer2Id(), k -> new PlayerStats(k));
+        player2Stats.addMatch(match.getPlayer2Score(), match.getPlayer1Score());
+    }
+
+    /**
+     * 生成淘汰赛对阵
+     */
+    private List<MatchRecord> generateKnockoutPairings(List<PlayerStats> players, Long tournamentId, Long stageId) {
+        List<MatchRecord> matches = new ArrayList<>();
+        int totalPlayers = players.size();
+        int nextPowerOfTwo = Integer.highestOneBit(totalPlayers - 1) * 2;
+        int byeCount = nextPowerOfTwo - totalPlayers; // 轮空数量
+
+        // 按照积分排序，让成绩好的选手优先轮空
+        players.sort((a, b) -> b.getPoints() - a.getPoints());
+
+        List<Long> firstRoundPlayers = new ArrayList<>();
+        
+        // 添加轮空的选手
+        for (int i = 0; i < byeCount; i++) {
+            firstRoundPlayers.add(players.get(i).getPlayerId());
+        }
+
+        // 添加需要比赛的选手
+        for (int i = byeCount; i < players.size(); i += 2) {
+            if (i + 1 < players.size()) {
+                MatchRecord match = new MatchRecord();
+                match.setTournamentId(tournamentId);
+                match.setStageId(stageId);
+                match.setPlayer1Id(players.get(i).getPlayerId());
+                match.setPlayer2Id(players.get(i + 1).getPlayerId());
+                match.setPlayer1Score(0);
+                match.setPlayer2Score(0);
+                match.setStatus("PENDING");
+                match.setRound(1); // 第一轮
+                match.setCreatedAt(LocalDateTime.now());
+                match.setUpdatedAt(LocalDateTime.now());
+                matches.add(match);
+            }
+        }
+
+        return matches;
+    }
+
+    /**
+     * 选手统计数据类
+     */
+    private static class PlayerStats {
+        private final Long playerId;
+        private int points = 0; // 积分
+        private int wins = 0; // 胜场
+        private int totalScore = 0; // 总得分
+        private int totalAgainst = 0; // 总失分
+
+        public PlayerStats(Long playerId) {
+            this.playerId = playerId;
+        }
+
+        public void addMatch(int scoreFor, int scoreAgainst) {
+            if (scoreFor > scoreAgainst) {
+                points += 3; // 胜场得3分
+                wins++;
+            } else if (scoreFor == scoreAgainst) {
+                points += 1; // 平局得1分
+            }
+            totalScore += scoreFor;
+            totalAgainst += scoreAgainst;
+        }
+
+        public Long getPlayerId() {
+            return playerId;
+        }
+
+        public int getPoints() {
+            return points;
+        }
+
+        public int getWins() {
+            return wins;
+        }
+
+        public int getTotalScore() {
+            return totalScore;
+        }
+
+        public int getScoreDiff() {
+            return totalScore - totalAgainst;
+        }
+    }
 }

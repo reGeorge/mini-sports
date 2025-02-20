@@ -5,6 +5,7 @@ import com.example.sports.entity.Tournament;
 import com.example.sports.entity.TournamentStage;
 import com.example.sports.service.TournamentService;
 import com.example.sports.service.TournamentStageService;
+import com.example.sports.vo.MatchScoreVO;
 import com.example.sports.vo.PageVO;
 import com.example.sports.vo.TournamentQueryVO;
 import org.slf4j.Logger;
@@ -115,6 +116,27 @@ public class TournamentController {
             return Result.success(stages);
         } catch (Exception e) {
             log.error("开始赛事失败", e);
+            throw e;
+        }
+    }
+
+    /**
+     * 更新比赛比分
+     */
+    @PutMapping("/{tournamentId}/matches/{matchId}/score")
+    @PreAuthorize("hasAuthority('match:score')")
+    public Result<Void> updateMatchScore(
+            @PathVariable Long tournamentId,
+            @PathVariable Long matchId,
+            @RequestBody MatchScoreVO scoreVO) {
+        log.info("========== 更新比赛比分 ==========");
+        log.info("赛事ID: {}, 比赛ID: {}, 比分信息: {}", tournamentId, matchId, scoreVO);
+        try {
+            tournamentStageService.updateMatchScore(tournamentId, matchId, scoreVO.getPlayer1Score(), scoreVO.getPlayer2Score());
+            log.info("比分更新成功");
+            return Result.success();
+        } catch (Exception e) {
+            log.error("更新比赛比分失败", e);
             throw e;
         }
     }

@@ -54,6 +54,27 @@
         ORDER BY created_at ASC
     </select>
 
+    <select id="selectByGroupId" resultType="com.example.sports.entity.MatchRecord">
+        SELECT 
+            id,
+            tournament_id,
+            stage_id,
+            group_id,
+            player1_id,
+            player2_id,
+            player1_score,
+            player2_score,
+            winner_id,
+            status,
+            start_time,
+            end_time,
+            created_at,
+            updated_at
+        FROM match_record
+        WHERE group_id = #{groupId}
+        ORDER BY created_at ASC
+    </select>
+
     <select id="selectByTournamentAndStage" resultType="com.example.sports.entity.MatchRecord">
         SELECT 
             id,
@@ -75,4 +96,42 @@
         AND stage_id = #{stageId}
         ORDER BY created_at ASC
     </select>
+
+    <select id="selectById" resultType="com.example.sports.entity.MatchRecord">
+        SELECT 
+            id,
+            tournament_id,
+            stage_id,
+            group_id,
+            player1_id,
+            player2_id,
+            player1_score,
+            player2_score,
+            winner_id,
+            status,
+            start_time,
+            end_time,
+            created_at,
+            updated_at
+        FROM match_record
+        WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="com.example.sports.entity.MatchRecord">
+        UPDATE match_record
+        SET 
+            tournament_id = #{tournamentId},
+            stage_id = #{stageId},
+            group_id = #{groupId},
+            player1_id = #{player1Id},
+            player2_id = #{player2Id},
+            player1_score = #{player1Score},
+            player2_score = #{player2Score},
+            winner_id = #{winnerId},
+            status = #{status},
+            start_time = #{startTime},
+            end_time = #{endTime},
+            updated_at = #{updatedAt}
+        WHERE id = #{id}
+    </update>
 </mapper>
