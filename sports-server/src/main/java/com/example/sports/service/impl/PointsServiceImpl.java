@@ -63,11 +63,13 @@ public class PointsServiceImpl implements PointsService {
         // 创建积分变更记录
         PointsRecord record = new PointsRecord();
         record.setUserId(userId);
-        record.setPoints(points - currentPoints); // 计算积分变化值
+        record.setPointsBefore(currentPoints);
+        record.setPointsAfter(points);
+        record.setPointsChange(points - currentPoints); // 计算积分变化值
         record.setDescription(reason);
         record.setType(points > currentPoints ? "增加" : "减少");
-        record.setCreateTime(LocalDateTime.now());
-        record.setUpdateTime(LocalDateTime.now());
+        record.setCreatedAt(LocalDateTime.now());
+        record.setUpdatedAt(LocalDateTime.now());
         
         // 保存积分变更记录
         pointsRecordMapper.insert(record);
