@@ -15,6 +15,7 @@ public class TournamentMatchVO {
     private Integer player2Score;
     private String status;  // PENDING, ONGOING, FINISHED
     private String winner;  // PLAYER1, PLAYER2
+    private Integer round; // 比赛轮次
 
     public Long getId() {
         return id;
@@ -88,6 +89,13 @@ public class TournamentMatchVO {
         this.winner = winner;
     }
 
+    public Integer getRound() {
+        return round;
+    }
+
+    public void setRound(Integer round) {
+        this.round = round;
+    }
     
     public TournamentMatchVO() {
     }
@@ -111,6 +119,7 @@ public class TournamentMatchVO {
         vo.setPlayer1Score(record.getPlayer1Score());
         vo.setPlayer2Score(record.getPlayer2Score());
         vo.setStatus(record.getStatus());
+        vo.setRound(record.getRound());
 
         // 获取并设置选手姓名
         if (record.getPlayer1Id() != null) {

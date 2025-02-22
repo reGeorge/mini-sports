@@ -54,12 +54,6 @@ public class UserServiceImpl implements UserService {
         Integer currentPoints = user.getPoints() != null ? user.getPoints() : 0;
         user.setPoints(currentPoints + updatePointsDTO.getPoints());
         userMapper.updateById(user);
-        
-        log.info("用户{}积分更新成功，变更：{}，原因：{}，类型：{}", 
-                user.getNickname(), 
-                updatePointsDTO.getPoints(), 
-                updatePointsDTO.getReason(), 
-                updatePointsDTO.getType());
     }
 
     @Override
@@ -89,7 +83,6 @@ public class UserServiceImpl implements UserService {
         
         // 密码加密存储
         String encodedPassword = passwordEncoder.encode(registerDTO.getPassword());
-        log.info("普通用户注册密码明文：{}，密文：{}", registerDTO.getPassword(), encodedPassword);
         user.setCredential(encodedPassword);
         
         // 设置其他默认值
@@ -106,9 +99,6 @@ public class UserServiceImpl implements UserService {
         Role userRole = roleMapper.findByCode("ROLE_USER");
         if (userRole != null) {
             roleService.assignUserRole(user.getId(), userRole.getId());
-            log.info("为新用户 {} 分配普通用户角色", user.getNickname());
-        } else {
-            log.warn("未找到ROLE_USER角色，新用户 {} 未分配角色", user.getNickname());
         }
 
         return user;
@@ -122,12 +112,8 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("用户不存在");
         }
 
-        log.info("用户登录，昵称：{}，密码明文：{}，数据库密文：{}", 
-            loginDTO.getNickname(), loginDTO.getPassword(), user.getCredential());
-
         // 验证密码
         if (!passwordEncoder.matches(loginDTO.getPassword(), user.getCredential())) {
-            log.warn("密码验证失败");
             throw new RuntimeException("密码错误");
         }
 
@@ -138,7 +124,6 @@ public class UserServiceImpl implements UserService {
 
         // 加载用户角色
         user.setRoles(userMapper.findUserRoles(user.getId()));
-        log.info("用户 {} 的角色列表：{}", user.getNickname(), user.getRoles());
 
         return user;
     }
@@ -174,6 +159,7 @@ public class UserServiceImpl implements UserService {
         userMapper.insert(user);
         return user;
     }
+
     @Override
     public User getUserInfo(Long userId) {
         if (userId == null) {
@@ -187,23 +173,19 @@ public class UserServiceImpl implements UserService {
         
         // 加载用户角色信息
         user.setRoles(userMapper.findUserRoles(user.getId()));
-        log.debug("获取用户信息成功，用户ID：{}，昵称：{}，积分：{}，等级：{}", 
-            user.getId(), user.getNickname(), user.getPoints(), user.getLevel());
             
         return user;
     }
 
     @Override
-    public User getUserById(Long userId) {
-        if (userId == null) {
-            throw new RuntimeException("用户ID不能为空");
-        }
-        
-        User user = userMapper.selectById(userId);
-        if (user == null) {
-            throw new RuntimeException("用户不存在");
-        }
-        
-        return user;
+    public User getUserById(Long id) {
+        return userMapper.selectById(id);
+    }
+    
+    @Override
+    @Transactional
+    public void updateUser(User user) {
+        user.setUpdatedAt(LocalDateTime.now());
+        userMapper.updateById(user);
     }
 }

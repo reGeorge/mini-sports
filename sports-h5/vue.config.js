@@ -11,16 +11,6 @@ module.exports = defineConfig({
         changeOrigin: true,
         pathRewrite: {
           '^/api': ''  // 移除 /api 前缀（后端定义的接口不带/api前缀）
-        },
-        logLevel: 'debug',
-        onProxyReq(proxyReq, req) {
-          console.log('原始请求:', `${req.method} ${req.protocol}://${req.headers.host}${req.url}`);
-          console.log('代理到目标:', `${proxyReq.method} ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
-          console.log('请求头:', proxyReq.getHeaders());
-        },
-        onProxyRes(proxyRes, req) {
-          console.log('响应状态:', proxyRes.statusCode);
-          console.log('响应头:', proxyRes.headers);
         }
       }
     }

@@ -5,6 +5,8 @@ import com.example.sports.entity.TournamentStage;
 import com.example.sports.entity.TournamentGroup;
 import com.example.sports.entity.MatchRecord;
 import com.example.sports.entity.TournamentRegistration;
+import com.example.sports.entity.User;
+import com.example.sports.entity.PointsRecord;
 import com.example.sports.service.TournamentStageService;
 import com.example.sports.service.UserService;
 import com.example.sports.vo.TournamentStageVO;
@@ -13,18 +15,16 @@ import com.example.sports.mapper.TournamentStageMapper;
 import com.example.sports.mapper.TournamentGroupMapper;
 import com.example.sports.mapper.MatchRecordMapper;
 import com.example.sports.mapper.TournamentRegistrationMapper;
+import com.example.sports.mapper.PointsRecordMapper;
+import com.example.sports.constant.PointsRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Date;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +51,9 @@ public class TournamentStageServiceImpl implements TournamentStageService {
 
     @Autowired
     private TournamentRegistrationMapper registrationMapper;
+
+    @Autowired
+    private PointsRecordMapper pointsRecordMapper;
 
     /**
      * 将 LocalDateTime 转换为 Date
@@ -334,28 +337,45 @@ public class TournamentStageServiceImpl implements TournamentStageService {
     /**
      * 处理淘汰赛阶段比赛完成后的逻辑
      */
-    private void handleKnockoutStageMatch(TournamentStage stage, MatchRecord match) {
-        // 如果轮次为空，默认为第1轮
-        Integer currentRound = match.getRound() != null ? match.getRound() : 1;
+    private void handleKnockoutStageMatch(TournamentStage stage, MatchRecord finishedMatch) {
+        // 1. 获取当前轮次所有比赛
+        List<MatchRecord> currentRoundMatches = matchRecordMapper.selectByRound(stage.getId(), finishedMatch.getRound());
         
-        // 获取当前轮次所有比赛
-        List<MatchRecord> roundMatches = matchRecordMapper.selectByRound(stage.getId(), currentRound);
+        // 2. 检查当前轮次是否全部完成
+        boolean allFinished = currentRoundMatches.stream()
+                .allMatch(match -> "FINISHED".equals(match.getStatus()));
         
-        // 检查当前轮次是否全部完成
-        boolean roundFinished = roundMatches != null && roundMatches.stream()
-                .allMatch(m -> "FINISHED".equals(m.getStatus()));
-            
-        if (roundFinished) {
-            List<Long> winners = roundMatches.stream()
+        if (allFinished) {
+            // 3. 获取获胜者列表
+            List<Long> winners = currentRoundMatches.stream()
                     .map(MatchRecord::getWinnerId)
                     .collect(Collectors.toList());
-
-            if (winners.size() == 1) {
-                // 决出冠军，结束赛事
-                finishTournament(stage.getTournamentId(), winners.get(0));
+            
+            // 4. 获取下一轮比赛
+            List<MatchRecord> nextRoundMatches = matchRecordMapper.selectByRound(
+                stage.getId(), finishedMatch.getRound() + 1);
+            
+            if (!nextRoundMatches.isEmpty()) {
+                // 5. 更新下一轮比赛的选手
+                for (int i = 0; i < winners.size(); i += 2) {
+                    if (i/2 < nextRoundMatches.size()) {
+                        MatchRecord nextMatch = nextRoundMatches.get(i/2);
+                        if (i + 1 < winners.size()) {
+                            // 设置两个选手
+                            nextMatch.setPlayer1Id(winners.get(i));
+                            nextMatch.setPlayer2Id(winners.get(i + 1));
+                        } else {
+                            // 最后一个选手，直接晋级
+                            nextMatch.setPlayer1Id(winners.get(i));
+                            nextMatch.setStatus("FINISHED");
+                            nextMatch.setWinnerId(winners.get(i));
+                        }
+                        matchRecordMapper.update(nextMatch);
+                    }
+                }
             } else {
-                // 生成下一轮对阵
-                generateNextRoundMatches(stage.getId(), currentRound, winners);
+                // 没有下一轮比赛，说明是决赛结束了
+                finishTournament(stage.getTournamentId(), finishedMatch.getWinnerId());
             }
         }
     }
@@ -364,11 +384,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
      * 生成下一轮淘汰赛对阵
      */
     private void generateNextRoundMatches(Long stageId, Integer currentRound, List<Long> winners) {
-        log.info("开始生成第{}轮对阵，获胜者数量: {}", currentRound + 1, winners.size());
-        
         if (winners == null || winners.isEmpty()) {
-            log.warn("没有获胜者，无法生成下一轮对阵");
-            return;
+            throw new IllegalStateException("没有获胜者，无法生成下一轮对阵");
         }
         
         LocalDateTime now = LocalDateTime.now();
@@ -382,8 +399,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         // 生成下一轮对阵
         for (int i = 0; i < winners.size(); i += 2) {
             if (i + 1 >= winners.size()) {
-                log.warn("获胜者数量不足，无法生成完整对阵");
-                break;
+                continue;
             }
             
             MatchRecord nextMatch = new MatchRecord();
@@ -398,7 +414,6 @@ public class TournamentStageServiceImpl implements TournamentStageService {
             nextMatch.setCreatedAt(now);
             nextMatch.setUpdatedAt(now);
             
-            log.info("生成第{}轮对阵：{} vs {}", currentRound + 1, winners.get(i), winners.get(i + 1));
             matchRecordMapper.insert(nextMatch);
         }
     }
@@ -414,26 +429,96 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         tournament.setUpdatedAt(toDate(LocalDateTime.now()));
         tournamentService.update(tournament);
 
-        // TODO: 这里可以添加发放奖励的逻辑
-        // 例如更新用户积分、发放奖品等
+        // 获取所有比赛记录
+        List<MatchRecord> allMatches = matchRecordMapper.selectByTournamentId(tournamentId);
+        
+        // 用于记录每个用户的积分变化
+        Map<Long, Integer> userPointsChanges = new HashMap<>();
+        
+        // 遍历所有比赛记录，计算积分变化
+        for (MatchRecord match : allMatches) {
+            if (!"FINISHED".equals(match.getStatus())) {
+                continue;
+            }
+            
+            // 获取选手当前积分
+            User player1 = userService.getUserById(match.getPlayer1Id());
+            User player2 = userService.getUserById(match.getPlayer2Id());
+            
+            // 计算积分变化
+            if (match.getWinnerId().equals(match.getPlayer1Id())) {
+                // 选手1胜利
+                int winPoints = PointsRule.getWinPoints(player1.getPoints());
+                int losePoints = PointsRule.getLosePoints(player2.getPoints());
+                
+                // 记录积分变化
+                recordPointsChange(match, player1, winPoints, "WIN");
+                recordPointsChange(match, player2, -losePoints, "LOSE");
+                
+                // 累计总积分变化
+                userPointsChanges.merge(player1.getId(), winPoints, Integer::sum);
+                userPointsChanges.merge(player2.getId(), -losePoints, Integer::sum);
+            } else {
+                // 选手2胜利
+                int winPoints = PointsRule.getWinPoints(player2.getPoints());
+                int losePoints = PointsRule.getLosePoints(player1.getPoints());
+                
+                // 记录积分变化
+                recordPointsChange(match, player2, winPoints, "WIN");
+                recordPointsChange(match, player1, -losePoints, "LOSE");
+                
+                // 累计总积分变化
+                userPointsChanges.merge(player2.getId(), winPoints, Integer::sum);
+                userPointsChanges.merge(player1.getId(), -losePoints, Integer::sum);
+            }
+        }
+        
+        // 更新所有用户的积分
+        for (Map.Entry<Long, Integer> entry : userPointsChanges.entrySet()) {
+            Long userId = entry.getKey();
+            Integer pointsChange = entry.getValue();
+            
+            User user = userService.getUserById(userId);
+            user.setPoints(Math.max(0, user.getPoints() + pointsChange)); // 确保积分不会小于0
+            userService.updateUser(user);
+        }
+    }
+    
+    /**
+     * 记录积分变化
+     */
+    private void recordPointsChange(MatchRecord match, User user, int pointsChange, String type) {
+        PointsRecord record = new PointsRecord();
+        record.setUserId(user.getId());
+        record.setTournamentId(match.getTournamentId());
+        record.setMatchId(match.getId());
+        record.setPointsChange(pointsChange);
+        record.setPointsBefore(user.getPoints());
+        record.setPointsAfter(Math.max(0, user.getPoints() + pointsChange));
+        record.setType(type);
+        record.setDescription(String.format(
+            "%s在比赛中%s，%s%d积分",
+            user.getNickname(),
+            "WIN".equals(type) ? "获胜" : "失败",
+            pointsChange >= 0 ? "获得" : "失去",
+            Math.abs(pointsChange)
+        ));
+        record.setCreatedAt(LocalDateTime.now());
+        record.setUpdatedAt(LocalDateTime.now());
+        
+        pointsRecordMapper.insert(record);
     }
 
     /**
      * 生成淘汰赛对阵表
-     * @param tournamentId 赛事ID
-     * @param groupStageId 小组赛阶段ID
      */
     private void generateKnockoutMatches(Long tournamentId, Long groupStageId) {
-        log.info("开始生成淘汰赛对阵表，赛事ID: {}, 小组赛阶段ID: {}", tournamentId, groupStageId);
-
         // 1. 获取所有小组的比赛记录
         List<TournamentGroup> groups = tournamentGroupMapper.selectByStageId(groupStageId);
         List<PlayerStats> allQualifiedPlayers = new ArrayList<>();
-        log.info("获取到 {} 个小组", groups.size());
 
         // 2. 计算每个小组的选手成绩并选出前4名
         for (TournamentGroup group : groups) {
-            log.info("开始处理小组 {} 的成绩统计", group.getName());
             List<MatchRecord> groupMatches = matchRecordMapper.selectByGroupId(group.getId());
             Map<Long, PlayerStats> playerStatsMap = new HashMap<>();
 
@@ -454,40 +539,24 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 return b.getTotalScore() - a.getTotalScore(); // 按总得分降序
             });
 
-            // 输出小组排名
-            log.info("小组 {} 排名情况：", group.getName());
-            for (int i = 0; i < sortedPlayers.size(); i++) {
-                PlayerStats player = sortedPlayers.get(i);
-                log.info("第{}名 - 选手ID: {}, 积分: {}, 胜场: {}, 总得分: {}, 得失分差: {}",
-                    i + 1, player.getPlayerId(), player.getPoints(), player.getWins(),
-                    player.getTotalScore(), player.getScoreDiff());
-            }
-
             // 2.3 选取前4名选手
             int qualifiedCount = Math.min(4, sortedPlayers.size());
             allQualifiedPlayers.addAll(sortedPlayers.subList(0, qualifiedCount));
-            log.info("小组 {} 晋级 {} 名选手", group.getName(), qualifiedCount);
         }
 
         // 3. 获取淘汰赛阶段
         TournamentStage knockoutStage = tournamentStageMapper.selectNextStage(tournamentId, 1);
         if (knockoutStage == null || !"KNOCKOUT".equals(knockoutStage.getType())) {
-            log.error("未找到淘汰赛阶段或阶段类型错误");
-            return;
+            throw new IllegalStateException("未找到淘汰赛阶段或阶段类型错误");
         }
 
         // 4. 生成淘汰赛对阵表
         List<MatchRecord> knockoutMatches = generateKnockoutPairings(allQualifiedPlayers, tournamentId, knockoutStage.getId());
-        log.info("生成淘汰赛对阵表完成，共 {} 场比赛", knockoutMatches.size());
         
         // 5. 保存淘汰赛对阵记录
         for (MatchRecord match : knockoutMatches) {
             matchRecordMapper.insert(match);
-            log.info("创建淘汰赛比赛记录：选手1 ID: {} vs 选手2 ID: {}, 轮次: {}",
-                match.getPlayer1Id(), match.getPlayer2Id(), match.getRound());
         }
-        
-        log.info("淘汰赛对阵表生成完成");
     }
 
     /**
@@ -515,14 +584,15 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         // 按照积分排序，让成绩好的选手优先轮空
         players.sort((a, b) -> b.getPoints() - a.getPoints());
 
-        List<Long> firstRoundPlayers = new ArrayList<>();
+        List<Long> currentRoundPlayers = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
         
-        // 添加轮空的选手
+        // 添加轮空的选手到下一轮
         for (int i = 0; i < byeCount; i++) {
-            firstRoundPlayers.add(players.get(i).getPlayerId());
+            currentRoundPlayers.add(players.get(i).getPlayerId());
         }
 
-        // 添加需要比赛的选手
+        // 生成第一轮比赛
         for (int i = byeCount; i < players.size(); i += 2) {
             if (i + 1 < players.size()) {
                 MatchRecord match = new MatchRecord();
@@ -534,8 +604,31 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 match.setPlayer2Score(0);
                 match.setStatus("PENDING");
                 match.setRound(1); // 第一轮
-                match.setCreatedAt(LocalDateTime.now());
-                match.setUpdatedAt(LocalDateTime.now());
+                match.setCreatedAt(now);
+                match.setUpdatedAt(now);
+                matches.add(match);
+            }
+        }
+
+        // 生成后续轮次的对阵（预先生成）
+        int currentRound = 1;
+        int matchesInRound = (players.size() - byeCount) / 2;
+
+        while (matchesInRound > 0) {
+            currentRound++;
+            matchesInRound = matchesInRound / 2;
+
+            // 为每个预期的比赛创建占位记录
+            for (int i = 0; i < matchesInRound; i++) {
+                MatchRecord match = new MatchRecord();
+                match.setTournamentId(tournamentId);
+                match.setStageId(stageId);
+                match.setPlayer1Score(0);
+                match.setPlayer2Score(0);
+                match.setStatus("PENDING");
+                match.setRound(currentRound);
+                match.setCreatedAt(now);
+                match.setUpdatedAt(now);
                 matches.add(match);
             }
         }

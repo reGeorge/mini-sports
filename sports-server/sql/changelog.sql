@@ -95,4 +95,82 @@ INSERT INTO permission (name, code, description) VALUES
 ('查看比赛', 'match:view', '查看比赛记录'),
 ('记录比分', 'match:score', '记录比赛比分'),
 ('编辑比赛', 'match:edit', '编辑比赛信息'),
-('结束比赛', 'match:finish', '结束比赛'); 
+('结束比赛', 'match:finish', '结束比赛');
+
+# 变更记录
+
+## 2024-01-20 (V1.0.0)
+- 初始化项目基础表结构
+- 创建用户表 user
+- 创建角色表 role
+- 创建权限表 permission
+- 创建用户角色关联表 user_role
+- 创建角色权限关联表 role_permission
+- 初始化角色和权限数据
+
+## 2024-01-25 (V1.0.1)
+- 用户表增强
+  - 添加握拍方式字段 grip_style
+  - 添加球拍配置字段 racket_config
+
+## 2024-01-30 (V1.0.2)
+- 角色表增强
+  - 添加角色代码字段 code
+  - 更新角色基础数据
+
+## 2024-02-01 (V1.0.3)
+- 赛事功能增强
+  - 创建赛事表 tournament
+  - 创建赛事报名表 tournament_registration
+  - 创建比赛记录表 match_record
+  - 添加裁判角色
+  - 添加赛事相关权限
+
+## 2024-02-03 (V1.0.4)
+- 赛事阶段功能
+  - 创建比赛阶段表 tournament_stage
+  - 创建比赛分组表 tournament_group
+  - 更新比赛记录表，添加阶段和分组关联
+
+## 2024-02-22 (V1.0.5)
+- 积分系统功能
+  - 创建积分记录表 points_record
+  - 添加积分相关权限
+  - 优化角色和权限的初始化数据
+
+-- 具体的 SQL 变更语句
+
+-- V1.0.1 用户表增强
+ALTER TABLE user ADD COLUMN grip_style VARCHAR(50) COMMENT '握拍方式';
+ALTER TABLE user ADD COLUMN racket_config VARCHAR(100) COMMENT '球拍配置';
+
+-- V1.0.2 角色增强
+ALTER TABLE role ADD COLUMN code VARCHAR(50) COMMENT '角色代码';
+UPDATE role SET 
+    name = '管理员',
+    code = 'ROLE_ADMIN',
+    description = '系统管理员'
+WHERE id = 1;
+UPDATE role SET 
+    name = '普通用户',
+    code = 'ROLE_USER',
+    description = '普通用户'
+WHERE id = 2;
+
+-- V1.0.3 赛事相关权限
+INSERT INTO permission (name, code, description) VALUES
+('查看赛事', 'tournament:view', '查看赛事信息'),
+('创建赛事', 'tournament:create', '创建新赛事'),
+('编辑赛事', 'tournament:edit', '编辑赛事信息'),
+('删除赛事', 'tournament:delete', '删除赛事'),
+('审核赛事', 'tournament:audit', '审核赛事报名'),
+('赛事报名', 'tournament:register', '报名参加赛事'),
+('查看比赛', 'match:view', '查看比赛记录'),
+('记录比分', 'match:score', '记录比赛比分'),
+('编辑比赛', 'match:edit', '编辑比赛信息'),
+('结束比赛', 'match:finish', '结束比赛');
+
+-- V1.0.5 积分相关权限
+INSERT INTO permission (name, code, description) VALUES
+('积分查看', 'points:view', '查看积分记录'),
+('积分管理', 'points:manage', '管理用户积分'); 

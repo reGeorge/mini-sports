@@ -30,4 +30,13 @@ public interface PointsRecordMapper {
      * @return 记录总数
      */
     long getPointsRecordsCount(@Param("userId") Long userId);
+
+    List<PointsRecord> selectByTournamentId(@Param("tournamentId") Long tournamentId);
+    
+    List<PointsRecord> selectByUserId(@Param("userId") Long userId);
+    
+    List<PointsRecord> selectByTournamentAndUser(
+        @Param("tournamentId") Long tournamentId,
+        @Param("userId") Long userId
+    );
 }

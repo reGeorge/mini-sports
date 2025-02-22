@@ -1,58 +1,59 @@
-# 创建新文件
+# 完整的数据库表结构
+
 -- 创建用户表
 CREATE TABLE user (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    nickname VARCHAR(50) NOT NULL,
-    avatar_url VARCHAR(255),
-    phone VARCHAR(20) NOT NULL,
-    credential VARCHAR(255) NOT NULL,
-    points INT DEFAULT 0,
-    level VARCHAR(20) DEFAULT 'BEGINNER',
-    status INT DEFAULT 1,
-    id_type VARCHAR(20),
-    id_number VARCHAR(50),
-    address VARCHAR(255),
-    grip_style VARCHAR(50),
-    racket_config VARCHAR(100),
-    created_at DATETIME NOT NULL,
-    updated_at DATETIME NOT NULL
-);
+    nickname VARCHAR(50) NOT NULL COMMENT '昵称',
+    avatar_url VARCHAR(255) COMMENT '头像URL',
+    phone VARCHAR(20) NOT NULL COMMENT '手机号',
+    credential VARCHAR(255) NOT NULL COMMENT '密码凭证',
+    points INT DEFAULT 0 COMMENT '积分',
+    level VARCHAR(20) DEFAULT 'BEGINNER' COMMENT '等级',
+    status INT DEFAULT 1 COMMENT '状态：1-正常，0-禁用',
+    id_type VARCHAR(20) COMMENT '证件类型',
+    id_number VARCHAR(50) COMMENT '证件号码',
+    address VARCHAR(255) COMMENT '地址',
+    grip_style VARCHAR(50) COMMENT '握拍方式',
+    racket_config VARCHAR(100) COMMENT '球拍配置',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    updated_at DATETIME NOT NULL COMMENT '更新时间'
+) COMMENT '用户表';
 
 -- 创建角色表
 CREATE TABLE role (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    code VARCHAR(50) NOT NULL,
-    description VARCHAR(255),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+    name VARCHAR(50) NOT NULL COMMENT '角色名称',
+    code VARCHAR(50) NOT NULL COMMENT '角色代码',
+    description VARCHAR(255) COMMENT '角色描述',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '角色表';
 
 -- 创建权限表
 CREATE TABLE permission (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
-    code VARCHAR(50) NOT NULL,
-    description VARCHAR(255),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+    name VARCHAR(50) NOT NULL COMMENT '权限名称',
+    code VARCHAR(50) NOT NULL COMMENT '权限代码',
+    description VARCHAR(255) COMMENT '权限描述',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间'
+) COMMENT '权限表';
 
 -- 创建用户角色关联表
 CREATE TABLE user_role (
-    user_id BIGINT NOT NULL,
-    role_id INT NOT NULL,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    role_id INT NOT NULL COMMENT '角色ID',
     PRIMARY KEY (user_id, role_id),
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (role_id) REFERENCES role(id)
-);
+) COMMENT '用户角色关联表';
 
 -- 创建角色权限关联表
 CREATE TABLE role_permission (
-    role_id INT NOT NULL,
-    permission_id INT NOT NULL,
+    role_id INT NOT NULL COMMENT '角色ID',
+    permission_id INT NOT NULL COMMENT '权限ID',
     PRIMARY KEY (role_id, permission_id),
     FOREIGN KEY (role_id) REFERENCES role(id),
     FOREIGN KEY (permission_id) REFERENCES permission(id)
-);
+) COMMENT '角色权限关联表';
 
 -- 创建赛事表
 CREATE TABLE tournament (
@@ -69,9 +70,10 @@ CREATE TABLE tournament (
     level VARCHAR(20) COMMENT '赛事级别',
     entry_fee DECIMAL(10,2) DEFAULT 0.00 COMMENT '报名费用',
     created_by BIGINT NOT NULL COMMENT '创建人ID',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (created_by) REFERENCES user(id)
+) COMMENT '赛事表';
 
 -- 创建赛事报名表
 CREATE TABLE tournament_registration (
@@ -80,26 +82,26 @@ CREATE TABLE tournament_registration (
     user_id BIGINT NOT NULL COMMENT '用户ID',
     status VARCHAR(20) DEFAULT 'PENDING' COMMENT '报名状态：PENDING-待审核,APPROVED-已通过,REJECTED-已拒绝',
     payment_status VARCHAR(20) DEFAULT 'UNPAID' COMMENT '支付状态：UNPAID-未支付,PAID-已支付,REFUNDED-已退款',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (tournament_id) REFERENCES tournament(id),
     FOREIGN KEY (user_id) REFERENCES user(id)
-);
+) COMMENT '赛事报名表';
 
 -- 创建比赛阶段表
 CREATE TABLE tournament_stage (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     tournament_id BIGINT NOT NULL COMMENT '赛事ID',
     name VARCHAR(50) NOT NULL COMMENT '阶段名称',
-    type VARCHAR(20) NOT NULL COMMENT '阶段类型：ROUND_ROBIN-循环赛 KNOCKOUT-淘汰赛',
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING-待开始 ONGOING-进行中 FINISHED-已结束',
+    type VARCHAR(20) NOT NULL COMMENT '阶段类型：GROUP-小组赛,KNOCKOUT-淘汰赛',
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT '状态：PENDING-待开始,ONGOING-进行中,FINISHED-已结束',
     start_time DATETIME DEFAULT NULL COMMENT '开始时间',
     end_time DATETIME DEFAULT NULL COMMENT '结束时间',
     order_num INT NOT NULL DEFAULT 0 COMMENT '阶段顺序',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (tournament_id) REFERENCES tournament(id)
-);
+) COMMENT '比赛阶段表';
 
 -- 创建比赛分组表
 CREATE TABLE tournament_group (
@@ -107,11 +109,11 @@ CREATE TABLE tournament_group (
     tournament_id BIGINT NOT NULL COMMENT '赛事ID',
     stage_id BIGINT NOT NULL COMMENT '阶段ID',
     name VARCHAR(50) NOT NULL COMMENT '分组名称',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (tournament_id) REFERENCES tournament(id),
     FOREIGN KEY (stage_id) REFERENCES tournament_stage(id)
-);
+) COMMENT '比赛分组表';
 
 -- 创建比赛记录表
 CREATE TABLE match_record (
@@ -130,8 +132,8 @@ CREATE TABLE match_record (
     round INT COMMENT '比赛轮次',
     court_number VARCHAR(20) COMMENT '场地编号',
     referee_id BIGINT COMMENT '裁判ID',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     FOREIGN KEY (tournament_id) REFERENCES tournament(id),
     FOREIGN KEY (stage_id) REFERENCES tournament_stage(id),
     FOREIGN KEY (group_id) REFERENCES tournament_group(id),
@@ -139,4 +141,22 @@ CREATE TABLE match_record (
     FOREIGN KEY (player2_id) REFERENCES user(id),
     FOREIGN KEY (winner_id) REFERENCES user(id),
     FOREIGN KEY (referee_id) REFERENCES user(id)
-);
+) COMMENT '比赛记录表';
+
+-- 创建积分记录表
+CREATE TABLE points_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    tournament_id BIGINT NOT NULL COMMENT '赛事ID',
+    match_id BIGINT NOT NULL COMMENT '比赛ID',
+    points_change INT NOT NULL COMMENT '积分变化值',
+    points_before INT NOT NULL COMMENT '变化前积分',
+    points_after INT NOT NULL COMMENT '变化后积分',
+    type VARCHAR(20) NOT NULL COMMENT '类型：WIN-胜利,LOSE-失败',
+    description VARCHAR(255) COMMENT '描述',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (tournament_id) REFERENCES tournament(id),
+    FOREIGN KEY (match_id) REFERENCES match_record(id)
+) COMMENT '积分记录表';

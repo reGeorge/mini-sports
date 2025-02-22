@@ -1,33 +1,46 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.sports.mapper.PointsRecordMapper">
-    <insert id="insert" parameterType="com.example.sports.entity.PointsRecord">
+    <resultMap id="PointsRecordMap" type="com.example.sports.entity.PointsRecord">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="tournamentId" column="tournament_id"/>
+        <result property="matchId" column="match_id"/>
+        <result property="pointsChange" column="points_change"/>
+        <result property="pointsBefore" column="points_before"/>
+        <result property="pointsAfter" column="points_after"/>
+        <result property="type" column="type"/>
+        <result property="description" column="description"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.example.sports.entity.PointsRecord" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO points_record (
-            user_id,
-            points,
-            type,
-            description,
-            create_time,
-            update_time
+            user_id, tournament_id, match_id, points_change, points_before, points_after,
+            type, description, created_at, updated_at
         ) VALUES (
-            #{userId},
-            #{points},
-            #{type},
-            #{description},
-            #{createTime},
-            #{updateTime}
+            #{userId}, #{tournamentId}, #{matchId}, #{pointsChange}, #{pointsBefore}, #{pointsAfter},
+            #{type}, #{description}, #{createdAt}, #{updatedAt}
         )
     </insert>
-    
-    <select id="getPointsRecords" resultType="com.example.sports.entity.PointsRecord">
+
+    <select id="selectByTournamentId" resultMap="PointsRecordMap">
+        SELECT * FROM points_record
+        WHERE tournament_id = #{tournamentId}
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="selectByUserId" resultMap="PointsRecordMap">
         SELECT * FROM points_record
         WHERE user_id = #{userId}
-        ORDER BY create_time DESC
-        LIMIT #{size} OFFSET #{offset}
+        ORDER BY created_at DESC
     </select>
-    
-    <select id="getPointsRecordsCount" resultType="long">
-        SELECT COUNT(*) FROM points_record
-        WHERE user_id = #{userId}
+
+    <select id="selectByTournamentAndUser" resultMap="PointsRecordMap">
+        SELECT * FROM points_record
+        WHERE tournament_id = #{tournamentId}
+        AND user_id = #{userId}
+        ORDER BY created_at DESC
     </select>
 </mapper>

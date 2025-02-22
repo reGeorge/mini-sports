@@ -53,12 +53,16 @@
     </select>
 
     <select id="selectByRound" resultMap="MatchRecordMap">
-        SELECT 
-        <include refid="Base_Column_List"/>
-        FROM match_record
+        SELECT * FROM match_record
         WHERE stage_id = #{stageId}
         AND round = #{round}
         ORDER BY id ASC
+    </select>
+
+    <select id="selectByTournamentId" resultMap="MatchRecordMap">
+        SELECT * FROM match_record
+        WHERE tournament_id = #{tournamentId}
+        ORDER BY created_at ASC
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">

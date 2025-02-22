@@ -6,10 +6,7 @@
         <div class="group-stage">
           <div v-for="group in groupMatches" :key="group.name" class="group-section">
             <h3>{{ group.name }}</h3>
-            <match-list 
-              :matches="group.matches" 
-              @score-update="handleScoreUpdate"
-            />
+            <tournament-group :matches="group.matches" />
           </div>
         </div>
       </van-tab>
@@ -17,13 +14,7 @@
       <!-- 淘汰赛 Tab -->
       <van-tab title="淘汰赛" name="knockout" v-if="knockoutStage">
         <div class="knockout-stage">
-          <div v-for="round in knockoutRounds" :key="round" class="round-section">
-            <h3>第{{ round }}轮</h3>
-            <match-list 
-              :matches="getMatchesByRound(round)" 
-              @score-update="handleScoreUpdate"
-            />
-          </div>
+          <tournament-bracket :matches="knockoutStage.matches" />
         </div>
       </van-tab>
     </van-tabs>
@@ -32,10 +23,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
-import { showToast, Tab, Tabs } from 'vant'
-import request from '@/utils/request'
-import MatchList from './MatchList.vue'
+import { showToast } from 'vant'
 import { getTournamentStages } from '@/api/tournament'
+import TournamentGroup from './TournamentGroup.vue'
+import TournamentBracket from './TournamentBracket.vue'
 
 const activeTab = ref('group')
 const stagesData = ref([])
@@ -54,14 +45,12 @@ const groupStage = computed(() => {
 
 // 获取淘汰赛阶段
 const knockoutStage = computed(() => {
-  return stagesData.value.find(stage => stage.type === 'KNOCKOUT')
-})
-
-// 获取淘汰赛轮次
-const knockoutRounds = computed(() => {
-  if (!knockoutStage.value?.matches) return []
-  return [...new Set(knockoutStage.value.matches.map(match => match.round))]
-    .sort((a, b) => a - b)
+  const stage = stagesData.value.find(stage => stage.type === 'KNOCKOUT')
+  if (!stage) return null
+  return {
+    ...stage,
+    matches: stage.matches || []
+  }
 })
 
 // 按小组分组比赛
@@ -83,36 +72,17 @@ const groupMatches = computed(() => {
   return Object.values(groups)
 })
 
-// 按轮次获取比赛
-const getMatchesByRound = (round) => {
-  if (!knockoutStage.value?.matches) return []
-  return knockoutStage.value.matches.filter(match => match.round === round)
-}
-
-// 处理比分更新
-const handleScoreUpdate = async (matchId, player1Score, player2Score) => {
-  try {
-    await request({
-      url: `/tournaments/${props.tournamentId}/matches/${matchId}/score`,
-      method: 'put',
-      data: {
-        player1Score,
-        player2Score
-      }
-    })
-    await loadTournamentData()
-    showToast('比分更新成功')
-  } catch (error) {
-    console.error('更新比分失败:', error)
-    showToast('比分更新失败')
-  }
-}
-
 // 加载赛事数据
 const loadTournamentData = async () => {
   try {
     const response = await getTournamentStages(props.tournamentId)
     stagesData.value = response.data || []
+    
+    // 自动切换到进行中的阶段
+    const ongoingStage = stagesData.value.find(stage => stage.status === 'ONGOING')
+    if (ongoingStage) {
+      activeTab.value = ongoingStage.type.toLowerCase()
+    }
   } catch (error) {
     console.error('加载赛事数据失败:', error)
     showToast('加载数据失败')
@@ -152,8 +122,7 @@ onMounted(() => {
   margin-top: 16px;
 }
 
-.group-section,
-.round-section {
+.group-section {
   margin-bottom: 24px;
 }
 

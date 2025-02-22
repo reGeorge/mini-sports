@@ -34,11 +34,8 @@ public class TournamentController {
     @GetMapping
     @PreAuthorize("hasAuthority('tournament:view')")
     public Result<PageVO<Tournament>> list(TournamentQueryVO queryVO) {
-        log.info("========== 获取赛事列表 ==========");
-        log.info("接收到的查询参数: {}", queryVO);
         try {
             PageVO<Tournament> pageVO = tournamentService.getList(queryVO);
-            log.info("查询成功，返回数据: {}", pageVO);
             return Result.success(pageVO);
         } catch (Exception e) {
             log.error("查询赛事列表失败", e);
@@ -61,11 +58,8 @@ public class TournamentController {
     @PostMapping
     @PreAuthorize("hasAuthority('tournament:create')")
     public Result<Tournament> create(@RequestBody Tournament tournament) {
-        log.info("========== 创建赛事 ==========");
-        log.info("接收到的请求数据: {}", tournament);
         try {
             Tournament created = tournamentService.create(tournament);
-            log.info("创建成功: {}", created);
             return Result.success(created);
         } catch (Exception e) {
             log.error("创建赛事失败", e);
@@ -108,11 +102,8 @@ public class TournamentController {
     @PostMapping("/{id}/start")
     @PreAuthorize("hasAuthority('tournament:edit')")
     public Result<List<TournamentStage>> startTournament(@PathVariable Long id) {
-        log.info("========== 开始赛事 ==========");
-        log.info("赛事ID: {}", id);
         try {
             List<TournamentStage> stages = tournamentStageService.startTournament(id);
-            log.info("赛事开始成功，生成的赛事阶段: {}", stages);
             return Result.success(stages);
         } catch (Exception e) {
             log.error("开始赛事失败", e);
@@ -129,11 +120,8 @@ public class TournamentController {
             @PathVariable Long tournamentId,
             @PathVariable Long matchId,
             @RequestBody MatchScoreVO scoreVO) {
-        log.info("========== 更新比赛比分 ==========");
-        log.info("赛事ID: {}, 比赛ID: {}, 比分信息: {}", tournamentId, matchId, scoreVO);
         try {
             tournamentStageService.updateMatchScore(tournamentId, matchId, scoreVO.getPlayer1Score(), scoreVO.getPlayer2Score());
-            log.info("比分更新成功");
             return Result.success();
         } catch (Exception e) {
             log.error("更新比赛比分失败", e);
