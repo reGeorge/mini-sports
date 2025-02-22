@@ -67,3 +67,14 @@ export function getTournamentStages(tournamentId) {
     method: 'get'
   })
 }
+
+/**
+ * 获取分组策略预览
+ * @param {number} id 赛事ID
+ */
+export function getGroupingStrategy(id) {
+  return request({
+    url: `/tournaments/${id}/grouping-strategy`,
+    method: 'get'
+  })
+}

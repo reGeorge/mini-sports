@@ -41,4 +41,9 @@ public interface TournamentService {
      * 更新赛事状态
      */
     Tournament updateStatus(Long id, String status);
+
+    /**
+     * 获取已报名人数
+     */
+    int getRegisteredCount(Long tournamentId);
 }

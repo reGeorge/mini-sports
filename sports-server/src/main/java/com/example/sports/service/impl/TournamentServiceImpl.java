@@ -136,4 +136,13 @@ public class TournamentServiceImpl implements TournamentService {
             throw new BusinessException("非法的状态转换");
         }
     }
+
+    @Override
+    public int getRegisteredCount(Long tournamentId) {
+        Tournament tournament = getById(tournamentId);
+        if (tournament == null) {
+            throw new BusinessException("赛事不存在");
+        }
+        return tournament.getCurrentPlayers();
+    }
 }

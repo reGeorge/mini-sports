@@ -128,4 +128,20 @@ public class TournamentController {
             throw e;
         }
     }
+
+    /**
+     * 获取分组策略预览
+     */
+    @GetMapping("/{id}/grouping-strategy")
+    @PreAuthorize("hasAuthority('tournament:view')")
+    public Result<TournamentGroupingStrategy.GroupingResult> getGroupingStrategy(@PathVariable Long id) {
+        Tournament tournament = tournamentService.getById(id);
+        if (tournament == null) {
+            return Result.error("赛事不存在");
+        }
+        
+        // 获取已报名人数
+        int registeredCount = tournamentService.getRegisteredCount(id);
+        return Result.success(TournamentGroupingStrategy.calculateStrategy(registeredCount));
+    }
 }

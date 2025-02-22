@@ -62,6 +62,55 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
     }
 
+    /**
+     * 计算最优分组方案
+     * @param totalPlayers 总参赛人数
+     * @return int[] 返回数组，第一个元素是分组数，第二个元素是每组人数
+     */
+    private int[] calculateGrouping(int totalPlayers) {
+        // 理想情况：每组4-6人，便于安排循环赛
+        int[] result = new int[2];
+        
+        if (totalPlayers <= 6) {
+            // 人数较少时只分一个组
+            result[0] = 1;
+            result[1] = totalPlayers;
+        } else if (totalPlayers <= 12) {
+            // 7-12人分2组
+            result[0] = 2;
+            result[1] = (totalPlayers + 1) / 2;
+        } else if (totalPlayers <= 24) {
+            // 13-24人分4组
+            result[0] = 4;
+            result[1] = (totalPlayers + 3) / 4;
+        } else {
+            // 25人以上分8组
+            result[0] = 8;
+            result[1] = (totalPlayers + 7) / 8;
+        }
+        
+        return result;
+    }
+
+    /**
+     * 计算每组出线人数
+     * @param groupCount 分组数量
+     * @param playersPerGroup 每组人数
+     * @return 每组出线人数
+     */
+    private int calculateQualifiers(int groupCount, int playersPerGroup) {
+        // 根据分组数量确定每组出线人数，确保淘汰赛人数是2的幂次
+        if (groupCount == 1) {
+            return Math.min(4, playersPerGroup);
+        } else if (groupCount == 2) {
+            return Math.min(4, playersPerGroup);
+        } else if (groupCount == 4) {
+            return Math.min(2, playersPerGroup);
+        } else {
+            return Math.min(2, playersPerGroup);
+        }
+    }
+
     @Override
     @Transactional
     public List<TournamentStage> startTournament(Long tournamentId) {
@@ -87,35 +136,40 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         // 3.1 创建小组赛阶段
         TournamentStage groupStage = new TournamentStage();
         groupStage.setTournamentId(tournamentId);
-        groupStage.setType("GROUP");
-        groupStage.setStatus("PENDING");
-        groupStage.setOrderNum(1);
         groupStage.setName("小组赛");
+        groupStage.setType("GROUP");
+        groupStage.setStatus("ONGOING");
+        groupStage.setOrderNum(1);
         LocalDateTime now = LocalDateTime.now();
+        groupStage.setStartTime(now);
         groupStage.setCreatedAt(now);
         groupStage.setUpdatedAt(now);
         tournamentStageMapper.insert(groupStage);
         stages.add(groupStage);
 
-        // 3.2 生成分组
+        // 3.2 进行分组
         int totalPlayers = registrations.size();
-        int groupSize = 6; // 每组6人
-        int numGroups = (totalPlayers + groupSize - 1) / groupSize; // 向上取整
+        int[] groupingPlan = calculateGrouping(totalPlayers);
+        int numGroups = groupingPlan[0];
+        int playersPerGroup = groupingPlan[1];
+        int qualifiersPerGroup = calculateQualifiers(numGroups, playersPerGroup);
+
+        // 随机打乱参赛者顺序
+        Collections.shuffle(registrations);
 
         for (int i = 0; i < numGroups; i++) {
             TournamentGroup group = new TournamentGroup();
             group.setTournamentId(tournamentId);
             group.setStageId(groupStage.getId());
-            group.setName(String.format("Group %c", (char)('A' + i)));
+            group.setName(String.format("第%d组", i + 1));
             group.setCreatedAt(now);
             group.setUpdatedAt(now);
             tournamentGroupMapper.insert(group);
 
-            // 为该组生成对阵表
-            List<TournamentRegistration> groupPlayers = registrations.subList(
-                i * groupSize,
-                Math.min((i + 1) * groupSize, totalPlayers)
-            );
+            // 计算当前组的实际人数
+            int startIdx = i * playersPerGroup;
+            int endIdx = Math.min((i + 1) * playersPerGroup, totalPlayers);
+            List<TournamentRegistration> groupPlayers = registrations.subList(startIdx, endIdx);
 
             // 生成组内循环赛对阵表
             List<MatchRecord> matches = new ArrayList<>();
@@ -136,7 +190,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 }
             }
 
-            // 优化对阵顺序，确保同一选手不会连续比赛
+            // 优化对阵顺序
             List<MatchRecord> optimizedMatches = optimizeMatchOrder(matches);
             for (MatchRecord match : optimizedMatches) {
                 matchRecordMapper.insert(match);

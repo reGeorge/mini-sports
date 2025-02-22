@@ -239,7 +239,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { showToast, showDialog } from 'vant'
-import { getTournamentById, updateTournamentStatus, deleteTournament as deleteTournamentApi, startTournament } from '@/api/tournament'
+import { getTournamentById, updateTournamentStatus, deleteTournament as deleteTournamentApi, startTournament, getGroupingStrategy } from '@/api/tournament'
 import { getRegistrations, register as registerApi, cancelRegistration as cancelRegistrationApi } from '@/api/registration'
 import { hasPermission } from '@/utils/permission'
 import { formatDate, getDateRange } from '@/utils/date'
@@ -256,6 +256,7 @@ const showDetailPopup = ref(false)
 const selectedUser = ref(null)
 const activeTab = ref('details')
 const matchRecords = ref([])
+const groupingStrategy = ref(null)
 
 // 获取当前用户ID
 const getCurrentUserId = () => {
@@ -269,6 +270,9 @@ const loadTournament = async () => {
     const res = await getTournamentById(route.params.id)
     tournament.value = res.data
     await loadRegistrations() // 加载报名列表
+    if (tournament.value?.status === 'REGISTERING') {
+      loadGroupingStrategy()
+    }
   } catch (error) {
     showToast('获取赛事信息失败')
     router.back()
@@ -289,6 +293,16 @@ const loadRegistrations = async () => {
   } catch (error) {
     console.error('获取参赛名单失败:', error)
     showToast('获取参赛名单失败')
+  }
+}
+
+// 获取分组策略
+const loadGroupingStrategy = async () => {
+  try {
+    const res = await getGroupingStrategy(route.params.id)
+    groupingStrategy.value = res.data
+  } catch (error) {
+    console.error('获取分组策略失败:', error)
   }
 }
 
@@ -774,5 +788,20 @@ onMounted(async () => {
       font-weight: 500;
     }
   }
+}
+
+.strategy-section {
+  margin-top: 12px;
+}
+
+.description-section {
+  margin-top: 12px;
+}
+
+.description-content {
+  padding: 12px 16px;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.5;
 }
 </style>
