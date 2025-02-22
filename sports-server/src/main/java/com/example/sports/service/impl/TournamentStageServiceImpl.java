@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,6 +51,13 @@ public class TournamentStageServiceImpl implements TournamentStageService {
 
     @Autowired
     private TournamentRegistrationMapper registrationMapper;
+
+    /**
+     * 将 LocalDateTime 转换为 Date
+     */
+    private Date toDate(LocalDateTime localDateTime) {
+        return Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+    }
 
     @Override
     @Transactional
@@ -79,8 +88,9 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         groupStage.setStatus("PENDING");
         groupStage.setOrderNum(1);
         groupStage.setName("小组赛");
-        groupStage.setCreatedAt(LocalDateTime.now());
-        groupStage.setUpdatedAt(LocalDateTime.now());
+        LocalDateTime now = LocalDateTime.now();
+        groupStage.setCreatedAt(now);
+        groupStage.setUpdatedAt(now);
         tournamentStageMapper.insert(groupStage);
         stages.add(groupStage);
 
@@ -94,8 +104,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
             group.setTournamentId(tournamentId);
             group.setStageId(groupStage.getId());
             group.setName(String.format("Group %c", (char)('A' + i)));
-            group.setCreatedAt(LocalDateTime.now());
-            group.setUpdatedAt(LocalDateTime.now());
+            group.setCreatedAt(now);
+            group.setUpdatedAt(now);
             tournamentGroupMapper.insert(group);
 
             // 为该组生成对阵表
@@ -117,8 +127,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                     match.setStatus("PENDING");
                     match.setPlayer1Score(0);
                     match.setPlayer2Score(0);
-                    match.setCreatedAt(LocalDateTime.now());
-                    match.setUpdatedAt(LocalDateTime.now());
+                    match.setCreatedAt(now);
+                    match.setUpdatedAt(now);
                     matches.add(match);
                 }
             }
@@ -137,8 +147,9 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         knockoutStage.setStatus("PENDING");
         knockoutStage.setOrderNum(2);
         knockoutStage.setName("淘汰赛");
-        knockoutStage.setCreatedAt(LocalDateTime.now());
-        knockoutStage.setUpdatedAt(LocalDateTime.now());
+        now = LocalDateTime.now();
+        knockoutStage.setCreatedAt(now);
+        knockoutStage.setUpdatedAt(now);
         tournamentStageMapper.insert(knockoutStage);
         stages.add(knockoutStage);
 
@@ -264,39 +275,147 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         if (!match.getTournamentId().equals(tournamentId)) {
             throw new IllegalArgumentException("比赛记录与赛事不匹配");
         }
-        // if ("FINISHED".equals(match.getStatus())) {
-        //     throw new IllegalStateException("比赛已结束，无法更新比分");
-        // }
 
-        // 3. 更新比分
+        // 3. 更新比分和获胜者
         match.setPlayer1Score(player1Score);
         match.setPlayer2Score(player2Score);
         match.setStatus("FINISHED");
+        match.setEndTime(LocalDateTime.now());
         match.setUpdatedAt(LocalDateTime.now());
+        
+        // 设置获胜者ID
+        if (player1Score > player2Score) {
+            match.setWinnerId(match.getPlayer1Id());
+        } else if (player2Score > player1Score) {
+            match.setWinnerId(match.getPlayer2Id());
+        } else {
+            throw new IllegalArgumentException("比分不能相等，必须决出胜负");
+        }
 
         // 4. 保存更新
         matchRecordMapper.update(match);
 
-        // 5. 检查并更新小组赛阶段状态
+        // 5. 获取赛事阶段信息
         TournamentStage stage = tournamentStageMapper.selectById(match.getStageId());
-        if (stage != null && "GROUP".equals(stage.getType())) {
-            // 获取该阶段所有比赛
-            List<MatchRecord> stageMatches = matchRecordMapper.selectByTournamentAndStage(tournamentId, stage.getId());
-            
-            // 检查是否所有比赛都已完成
-            boolean allFinished = stageMatches.stream()
-                    .allMatch(m -> "FINISHED".equals(m.getStatus()));
-            
-            // 如果所有比赛都完成，更新阶段状态为已结束，并生成出线名单
-            if (allFinished) {
-                stage.setStatus("FINISHED");
-                stage.setUpdatedAt(LocalDateTime.now());
-                tournamentStageMapper.update(stage);
+        if (stage == null) {
+            throw new IllegalStateException("赛事阶段不存在");
+        }
 
-                // 生成小组赛成绩和出线名单
-                generateKnockoutMatches(tournamentId, stage.getId());
+        // 6. 根据不同阶段类型处理后续逻辑
+        if ("GROUP".equals(stage.getType())) {
+            handleGroupStageMatch(stage, tournamentId);
+        } else if ("KNOCKOUT".equals(stage.getType())) {
+            handleKnockoutStageMatch(stage, match);
+        }
+    }
+
+    /**
+     * 处理小组赛阶段比赛完成后的逻辑
+     */
+    private void handleGroupStageMatch(TournamentStage stage, Long tournamentId) {
+        // 获取该阶段所有比赛
+        List<MatchRecord> stageMatches = matchRecordMapper.selectByTournamentAndStage(tournamentId, stage.getId());
+        
+        // 检查是否所有比赛都已完成
+        boolean allFinished = stageMatches.stream()
+                .allMatch(m -> "FINISHED".equals(m.getStatus()));
+        
+        // 如果所有比赛都完成，更新阶段状态为已结束，并生成出线名单
+        if (allFinished) {
+            stage.setStatus("FINISHED");
+            stage.setUpdatedAt(LocalDateTime.now());
+            tournamentStageMapper.update(stage);
+
+            // 生成小组赛成绩和出线名单
+            generateKnockoutMatches(tournamentId, stage.getId());
+        }
+    }
+
+    /**
+     * 处理淘汰赛阶段比赛完成后的逻辑
+     */
+    private void handleKnockoutStageMatch(TournamentStage stage, MatchRecord match) {
+        // 如果轮次为空，默认为第1轮
+        Integer currentRound = match.getRound() != null ? match.getRound() : 1;
+        
+        // 获取当前轮次所有比赛
+        List<MatchRecord> roundMatches = matchRecordMapper.selectByRound(stage.getId(), currentRound);
+        
+        // 检查当前轮次是否全部完成
+        boolean roundFinished = roundMatches != null && roundMatches.stream()
+                .allMatch(m -> "FINISHED".equals(m.getStatus()));
+            
+        if (roundFinished) {
+            List<Long> winners = roundMatches.stream()
+                    .map(MatchRecord::getWinnerId)
+                    .collect(Collectors.toList());
+
+            if (winners.size() == 1) {
+                // 决出冠军，结束赛事
+                finishTournament(stage.getTournamentId(), winners.get(0));
+            } else {
+                // 生成下一轮对阵
+                generateNextRoundMatches(stage.getId(), currentRound, winners);
             }
         }
+    }
+
+    /**
+     * 生成下一轮淘汰赛对阵
+     */
+    private void generateNextRoundMatches(Long stageId, Integer currentRound, List<Long> winners) {
+        log.info("开始生成第{}轮对阵，获胜者数量: {}", currentRound + 1, winners.size());
+        
+        if (winners == null || winners.isEmpty()) {
+            log.warn("没有获胜者，无法生成下一轮对阵");
+            return;
+        }
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 获取赛事ID
+        TournamentStage stage = tournamentStageMapper.selectById(stageId);
+        if (stage == null) {
+            throw new IllegalStateException("赛事阶段不存在");
+        }
+        
+        // 生成下一轮对阵
+        for (int i = 0; i < winners.size(); i += 2) {
+            if (i + 1 >= winners.size()) {
+                log.warn("获胜者数量不足，无法生成完整对阵");
+                break;
+            }
+            
+            MatchRecord nextMatch = new MatchRecord();
+            nextMatch.setTournamentId(stage.getTournamentId());
+            nextMatch.setStageId(stageId);
+            nextMatch.setPlayer1Id(winners.get(i));
+            nextMatch.setPlayer2Id(winners.get(i + 1));
+            nextMatch.setRound(currentRound + 1);
+            nextMatch.setStatus("PENDING");
+            nextMatch.setPlayer1Score(0);
+            nextMatch.setPlayer2Score(0);
+            nextMatch.setCreatedAt(now);
+            nextMatch.setUpdatedAt(now);
+            
+            log.info("生成第{}轮对阵：{} vs {}", currentRound + 1, winners.get(i), winners.get(i + 1));
+            matchRecordMapper.insert(nextMatch);
+        }
+    }
+
+    /**
+     * 处理赛事结束逻辑
+     */
+    private void finishTournament(Long tournamentId, Long winnerId) {
+        // 更新赛事状态
+        Tournament tournament = tournamentService.getTournamentById(tournamentId);
+        tournament.setStatus("FINISHED");
+        tournament.setEndTime(toDate(LocalDateTime.now()));
+        tournament.setUpdatedAt(toDate(LocalDateTime.now()));
+        tournamentService.update(tournament);
+
+        // TODO: 这里可以添加发放奖励的逻辑
+        // 例如更新用户积分、发放奖品等
     }
 
     /**

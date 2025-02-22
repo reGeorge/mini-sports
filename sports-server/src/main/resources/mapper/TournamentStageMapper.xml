@@ -1,54 +1,95 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.sports.mapper.TournamentStageMapper">
-    <insert id="insert" parameterType="com.example.sports.entity.TournamentStage" useGeneratedKeys="true" keyProperty="id">
+    
+    <resultMap id="StageMap" type="com.example.sports.entity.TournamentStage">
+        <id property="id" column="id"/>
+        <result property="tournamentId" column="tournament_id"/>
+        <result property="name" column="name"/>
+        <result property="type" column="type"/>
+        <result property="status" column="status"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="orderNum" column="order_num"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
+    <!-- 基础列 -->
+    <sql id="Base_Column_List">
+        id, tournament_id, name, type, status, 
+        start_time, end_time, order_num, created_at, updated_at
+    </sql>
+
+    <!-- 根据赛事ID查询阶段列表 -->
+    <select id="selectByTournamentId" resultMap="StageMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM tournament_stage
+        WHERE tournament_id = #{tournamentId}
+        ORDER BY order_num ASC
+    </select>
+
+    <!-- 插入数据 -->
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO tournament_stage (
-            tournament_id,
-            type,
-            status,
-            order_num,
-            name,
-            created_at,
-            updated_at
+            tournament_id, name, type, status,
+            start_time, end_time, order_num,
+            created_at, updated_at
         ) VALUES (
-            #{tournamentId},
-            #{type},
-            #{status},
-            #{orderNum},
-            #{name},
-            #{createdAt},
-            #{updatedAt}
+            #{tournamentId}, #{name}, #{type}, #{status},
+            #{startTime}, #{endTime}, #{orderNum},
+            #{createdAt}, #{updatedAt}
         )
     </insert>
 
-    <select id="selectById" resultType="com.example.sports.entity.TournamentStage">
-        SELECT * FROM tournament_stage WHERE id = #{id}
+    <!-- 更新数据 -->
+    <update id="update">
+        UPDATE tournament_stage
+        <set>
+            <if test="name != null">name = #{name},</if>
+            <if test="type != null">type = #{type},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="startTime != null">start_time = #{startTime},</if>
+            <if test="endTime != null">end_time = #{endTime},</if>
+            <if test="orderNum != null">order_num = #{orderNum},</if>
+            <if test="updatedAt != null">updated_at = #{updatedAt}</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 删除数据 -->
+    <delete id="deleteById">
+        DELETE FROM tournament_stage WHERE id = #{id}
+    </delete>
+
+    <!-- 根据ID查询 -->
+    <select id="selectById" resultMap="StageMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM tournament_stage
+        WHERE id = #{id}
     </select>
 
-    <select id="selectByTournamentId" resultType="com.example.sports.entity.TournamentStage">
-        SELECT * FROM tournament_stage WHERE tournament_id = #{tournamentId} ORDER BY order_num
-    </select>
-
-    <select id="selectCurrentStage" resultType="com.example.sports.entity.TournamentStage">
-        SELECT * FROM tournament_stage 
+    <!-- 查询当前阶段 -->
+    <select id="selectCurrentStage" resultMap="StageMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM tournament_stage 
         WHERE tournament_id = #{tournamentId} 
         AND status IN ('PENDING', 'ONGOING')
         ORDER BY order_num
         LIMIT 1
     </select>
 
-    <select id="selectNextStage" resultType="com.example.sports.entity.TournamentStage">
-        SELECT * FROM tournament_stage 
+    <!-- 查询下一个阶段 -->
+    <select id="selectNextStage" resultMap="StageMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM tournament_stage 
         WHERE tournament_id = #{tournamentId} 
         AND order_num > #{currentOrderNum}
         ORDER BY order_num
         LIMIT 1
     </select>
-
-    <update id="update" parameterType="com.example.sports.entity.TournamentStage">
-        UPDATE tournament_stage
-        SET status = #{status},
-            updated_at = #{updatedAt}
-        WHERE id = #{id}
-    </update>
 </mapper>

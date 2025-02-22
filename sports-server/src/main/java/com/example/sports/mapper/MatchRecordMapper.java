@@ -42,4 +42,9 @@ public interface MatchRecordMapper {
      * 根据赛事阶段ID查询比赛记录列表
      */
     List<MatchRecord> selectByStageId(@Param("stageId") Long stageId);
+
+    /**
+     * 根据阶段ID和轮次查询比赛记录
+     */
+    List<MatchRecord> selectByRound(@Param("stageId") Long stageId, @Param("round") Integer round);
 }

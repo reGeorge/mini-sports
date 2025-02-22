@@ -59,3 +59,11 @@ export function startTournament(id) {
     method: 'post'
   })
 }
+
+// 获取赛事阶段信息
+export function getTournamentStages(tournamentId) {
+  return request({
+    url: `/tournaments/${tournamentId}/stages`,
+    method: 'get'
+  })
+}
