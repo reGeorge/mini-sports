@@ -97,6 +97,15 @@ const routes = [
     path: '/admin/register',
     name: 'AdminRegister',
     component: () => import('@/views/admin/AdminRegister.vue')
+  },
+  {
+    path: '/match/history',
+    name: 'MatchHistory',
+    component: () => import('@/views/match/MatchHistory.vue'),
+    meta: { 
+      requiresAuth: true,
+      title: '比赛历史'
+    }
   }
 ]
 

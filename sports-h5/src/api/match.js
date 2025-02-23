@@ -108,3 +108,20 @@ export function getMatchDetail(matchId) {
     method: 'get'
   })
 }
+
+// 获取用户比赛历史
+export function getUserMatchHistory(params) {
+  return request({
+    url: '/matches/user/history',
+    method: 'get',
+    params
+  })
+}
+
+// 获取用户比赛统计
+export function getUserMatchStats() {
+  return request({
+    url: '/matches/user/stats',
+    method: 'get'
+  })
+}

@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
+import java.util.Map;
 
 @Mapper
 public interface MatchRecordMapper {
@@ -52,4 +53,19 @@ public interface MatchRecordMapper {
      * 根据赛事ID查询比赛记录列表
      */
     List<MatchRecord> selectByTournamentId(@Param("tournamentId") Long tournamentId);
+
+    /**
+     * 查询用户的比赛历史
+     */
+    List<MatchRecord> selectUserMatchHistory(@Param("userId") Long userId, @Param("offset") int offset, @Param("limit") int limit);
+
+    /**
+     * 统计用户的比赛总数
+     */
+    int countUserMatches(@Param("userId") Long userId);
+
+    /**
+     * 统计用户的胜负场次
+     */
+    Map<String, Object> selectUserMatchStats(@Param("userId") Long userId);
 }

@@ -23,6 +23,14 @@
         <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
+    <resultMap id="MatchRecordWithDetailsMap" type="com.example.sports.vo.MatchRecordVO" extends="MatchRecordMap">
+        <result property="player1Name" column="player1_name"/>
+        <result property="player2Name" column="player2_name"/>
+        <result property="pointsChange" column="points_change"/>
+        <result property="pointsBalance" column="points_balance"/>
+        <result property="pointsType" column="points_type"/>
+    </resultMap>
+
     <sql id="Base_Column_List">
         id, tournament_id, stage_id, group_id, group_name, player1_id, player2_id,
         player1_score, player2_score, winner_id, status, start_time, end_time,
@@ -103,4 +111,50 @@
     <delete id="deleteById">
         DELETE FROM match_record WHERE id = #{id}
     </delete>
+
+    <!-- 查询用户的比赛历史 -->
+    <select id="selectUserMatchHistory" resultMap="MatchRecordWithDetailsMap">
+        SELECT 
+            m.*,
+            u1.nickname as player1_name,
+            u2.nickname as player2_name,
+            pr.points as points_change,
+            pr.balance as points_balance,
+            pr.type as points_type
+        FROM match_record m
+        LEFT JOIN user u1 ON m.player1_id = u1.id
+        LEFT JOIN user u2 ON m.player2_id = u2.id
+        LEFT JOIN points_record pr ON m.id = pr.ref_id AND pr.user_id = #{userId}
+        WHERE (m.player1_id = #{userId} OR m.player2_id = #{userId})
+        AND m.status = 'FINISHED'
+        ORDER BY m.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 统计用户的比赛总数 -->
+    <select id="countUserMatches" resultType="int">
+        SELECT COUNT(*)
+        FROM match_record
+        WHERE (player1_id = #{userId} OR player2_id = #{userId})
+        AND status = 'FINISHED'
+    </select>
+
+    <!-- 统计用户的胜负场次 -->
+    <select id="selectUserMatchStats" resultType="java.util.Map">
+        SELECT 
+            COUNT(*) as total_matches,
+            SUM(CASE WHEN winner_id = #{userId} THEN 1 ELSE 0 END) as wins,
+            SUM(CASE WHEN winner_id != #{userId} AND winner_id IS NOT NULL THEN 1 ELSE 0 END) as losses,
+            SUM(CASE 
+                WHEN player1_id = #{userId} THEN player1_score 
+                ELSE player2_score 
+            END) as total_scores,
+            SUM(CASE 
+                WHEN player1_id = #{userId} THEN player2_score 
+                ELSE player1_score 
+            END) as total_lost
+        FROM match_record
+        WHERE (player1_id = #{userId} OR player2_id = #{userId})
+        AND status = 'FINISHED'
+    </select>
 </mapper>

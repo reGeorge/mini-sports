@@ -17,6 +17,7 @@ import com.example.sports.mapper.MatchRecordMapper;
 import com.example.sports.mapper.TournamentRegistrationMapper;
 import com.example.sports.mapper.PointsRecordMapper;
 import com.example.sports.constant.PointsRule;
+import com.example.sports.exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -539,8 +540,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 int losePoints = PointsRule.getLosePoints(player2.getPoints());
                 
                 // 记录积分变化
-                recordPointsChange(match, player1, winPoints, "WIN");
-                recordPointsChange(match, player2, -losePoints, "LOSE");
+                recordPointsChange(match, player1, "WIN");
+                recordPointsChange(match, player2, "LOSE");
                 
                 // 累计总积分变化
                 userPointsChanges.merge(player1.getId(), winPoints, Integer::sum);
@@ -551,8 +552,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 int losePoints = PointsRule.getLosePoints(player1.getPoints());
                 
                 // 记录积分变化
-                recordPointsChange(match, player2, winPoints, "WIN");
-                recordPointsChange(match, player1, -losePoints, "LOSE");
+                recordPointsChange(match, player2, "WIN");
+                recordPointsChange(match, player1, "LOSE");
                 
                 // 累计总积分变化
                 userPointsChanges.merge(player2.getId(), winPoints, Integer::sum);
@@ -572,26 +573,122 @@ public class TournamentStageServiceImpl implements TournamentStageService {
     }
     
     /**
-     * 记录积分变化
+     * 记录积分变更
      */
-    private void recordPointsChange(MatchRecord match, User user, int pointsChange, String type) {
-        PointsRecord record = new PointsRecord();
-        record.setUserId(user.getId());
-        record.setRuleId(1L); // 使用默认规则ID
-        record.setType(type);
-        record.setPoints(Math.abs(pointsChange));
-        record.setBalance(Math.max(0, user.getPoints() + pointsChange));
-        record.setDescription(String.format(
-            "%s在比赛中%s，%s%d积分",
-            user.getNickname(),
-            "WIN".equals(type) ? "获胜" : "失败",
-            pointsChange >= 0 ? "获得" : "失去",
-            Math.abs(pointsChange)
-        ));
-        record.setRefId(match.getId());
-        record.setCreatedAt(LocalDateTime.now());
-        
-        pointsRecordMapper.insert(record);
+    private void recordPointsChange(MatchRecord match, User user, String type) {
+        try {
+            // 获取对手信息
+            User opponent = user.getId().equals(match.getPlayer1Id()) 
+                ? userService.getUserById(match.getPlayer2Id())
+                : userService.getUserById(match.getPlayer1Id());
+            
+            // 处理初始积分
+            if (user.getPoints() == null || user.getPoints() == 0) {
+                if (type.equals("WIN")) {
+                    // 首胜,获取对手当前积分作为初始积分
+                    user.setPoints(opponent.getPoints());
+                } else {
+                    // 失败且无初始积分,设为1500
+                    user.setPoints(1500);
+                }
+                userService.updateUser(user);
+            }
+
+            if (opponent.getPoints() == null || opponent.getPoints() == 0) {
+                if (!type.equals("WIN")) {  // 对手获胜
+                    opponent.setPoints(user.getPoints());
+                } else {
+                    opponent.setPoints(1500);
+                }
+                userService.updateUser(opponent);
+            }
+
+            // 计算积分变更
+            int pointsChange = 0;
+            int userPoints = user.getPoints();
+            int opponentPoints = opponent.getPoints();
+            
+            if (type.equals("WIN")) {
+                // 获胜方积分变更
+                if (userPoints >= opponentPoints) {
+                    // 高分打低分
+                    if (userPoints <= 10) pointsChange = 9;
+                    else if (userPoints <= 40) pointsChange = 8;
+                    else if (userPoints <= 70) pointsChange = 7;
+                    else if (userPoints <= 100) pointsChange = 6;
+                    else if (userPoints <= 130) pointsChange = 5;
+                    else if (userPoints <= 160) pointsChange = 4;
+                    else if (userPoints <= 190) pointsChange = 3;
+                    else if (userPoints <= 220) pointsChange = 2;
+                    else if (userPoints <= 250) pointsChange = 1;
+                    else pointsChange = 0;
+                } else {
+                    // 低分打高分
+                    if (userPoints <= 10) pointsChange = 9;
+                    else if (userPoints <= 40) pointsChange = 12;
+                    else if (userPoints <= 70) pointsChange = 16;
+                    else if (userPoints <= 100) pointsChange = 20;
+                    else if (userPoints <= 130) pointsChange = 25;
+                    else if (userPoints <= 160) pointsChange = 30;
+                    else if (userPoints <= 190) pointsChange = 35;
+                    else if (userPoints <= 220) pointsChange = 40;
+                    else if (userPoints <= 250) pointsChange = 45;
+                    else pointsChange = 50;
+                }
+            } else {
+                // 失败方积分变更(取负值)
+                if (userPoints >= opponentPoints) {
+                    // 高分输给低分
+                    if (userPoints <= 10) pointsChange = -9;
+                    else if (userPoints <= 40) pointsChange = -12;
+                    else if (userPoints <= 70) pointsChange = -16;
+                    else if (userPoints <= 100) pointsChange = -20;
+                    else if (userPoints <= 130) pointsChange = -25;
+                    else if (userPoints <= 160) pointsChange = -30;
+                    else if (userPoints <= 190) pointsChange = -35;
+                    else if (userPoints <= 220) pointsChange = -40;
+                    else if (userPoints <= 250) pointsChange = -45;
+                    else pointsChange = -50;
+                } else {
+                    // 低分输给高分
+                    if (userPoints <= 10) pointsChange = -9;
+                    else if (userPoints <= 40) pointsChange = -8;
+                    else if (userPoints <= 70) pointsChange = -7;
+                    else if (userPoints <= 100) pointsChange = -6;
+                    else if (userPoints <= 130) pointsChange = -5;
+                    else if (userPoints <= 160) pointsChange = -4;
+                    else if (userPoints <= 190) pointsChange = -3;
+                    else if (userPoints <= 220) pointsChange = -2;
+                    else if (userPoints <= 250) pointsChange = -1;
+                    else pointsChange = 0;
+                }
+            }
+
+            // 更新用户积分
+            int newPoints = user.getPoints() + pointsChange;
+            user.setPoints(Math.max(0, newPoints)); // 确保积分不会为负
+            userService.updateUser(user);
+
+            // 记录积分变更
+            PointsRecord record = new PointsRecord();
+            record.setUserId(user.getId());
+            record.setType(type);
+            record.setPoints(pointsChange);
+            record.setBalance(user.getPoints());
+            record.setDescription(String.format("比赛%s: %s vs %s (积分:%d vs %d)", 
+                type.equals("WIN") ? "胜利" : "失败",
+                match.getPlayer1Id().equals(user.getId()) ? match.getPlayer1Score() : match.getPlayer2Score(),
+                match.getPlayer1Id().equals(user.getId()) ? match.getPlayer2Score() : match.getPlayer1Score(),
+                userPoints,
+                opponentPoints));
+            record.setRefId(match.getId());
+            record.setCreatedAt(LocalDateTime.now());
+            
+            pointsRecordMapper.insert(record);
+        } catch (Exception e) {
+            log.error("记录积分变更失败", e);
+            throw new BusinessException("记录积分变更失败");
+        }
     }
 
     /**
