@@ -3,18 +3,21 @@
     <van-tabs v-model:active="activeTab" sticky swipeable animated>
       <!-- 小组赛 Tab -->
       <van-tab title="小组赛" name="group" v-if="groupStage">
-        <div class="group-stage">
-          <div v-for="group in groupMatches" :key="group.name" class="group-section">
-            <h3>{{ group.name }}</h3>
-            <tournament-group :matches="group.matches" />
-          </div>
-        </div>
+        <van-tabs v-model:active="activeGroup" sticky swipeable animated>
+          <van-tab 
+            v-for="group in groupMatches" 
+            :key="group.name" 
+            :title="group.name"
+          >
+            <tournament-group :matches="group.matches" :tournament-id="tournamentId" @score-updated="handleScoreUpdated" />
+          </van-tab>
+        </van-tabs>
       </van-tab>
 
       <!-- 淘汰赛 Tab -->
       <van-tab title="淘汰赛" name="knockout" v-if="knockoutStage">
         <div class="knockout-stage">
-          <tournament-bracket :matches="knockoutStage.matches" />
+          <tournament-bracket :matches="knockoutStage.matches" :tournament-id="tournamentId" @score-updated="handleScoreUpdated" />
         </div>
       </van-tab>
     </van-tabs>
@@ -29,6 +32,7 @@ import TournamentGroup from './TournamentGroup.vue'
 import TournamentBracket from './TournamentBracket.vue'
 
 const activeTab = ref('group')
+const activeGroup = ref(0)
 const stagesData = ref([])
 
 const props = defineProps({
@@ -89,6 +93,11 @@ const loadTournamentData = async () => {
   }
 }
 
+// 处理比分更新
+const handleScoreUpdated = async () => {
+  await loadTournamentData()
+}
+
 onMounted(() => {
   loadTournamentData()
 })
@@ -133,5 +142,13 @@ h3 {
   border-radius: 4px;
   font-size: 16px;
   color: #333;
+}
+
+:deep(.van-tabs--line) {
+  padding-top: 44px;
+}
+
+:deep(.van-tabs__wrap--scrollable .van-tab) {
+  flex: 0 0 25%;
 }
 </style>

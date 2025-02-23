@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 创建比赛记录
 export function createMatch(data) {
   return request({
-    url: '/api/matches',
+    url: '/matches',
     method: 'post',
     data
   })
@@ -12,7 +12,7 @@ export function createMatch(data) {
 // 更新比赛记录
 export function updateMatch(id, data) {
   return request({
-    url: `/api/matches/${id}`,
+    url: `/matches/${id}`,
     method: 'put',
     data
   })
@@ -21,7 +21,7 @@ export function updateMatch(id, data) {
 // 获取比赛记录详情
 export function getMatch(id) {
   return request({
-    url: `/api/matches/${id}`,
+    url: `/matches/${id}`,
     method: 'get'
   })
 }
@@ -29,7 +29,7 @@ export function getMatch(id) {
 // 获取比赛的所有比赛记录
 export function getMatchesByTournament(tournamentId) {
   return request({
-    url: `/api/matches/tournament/${tournamentId}`,
+    url: `/matches/tournament/${tournamentId}`,
     method: 'get'
   })
 }
@@ -37,7 +37,7 @@ export function getMatchesByTournament(tournamentId) {
 // 获取阶段的比赛记录
 export function getMatchesByStage(stageId) {
   return request({
-    url: `/api/matches/stage/${stageId}`,
+    url: `/matches/stage/${stageId}`,
     method: 'get'
   })
 }
@@ -45,7 +45,7 @@ export function getMatchesByStage(stageId) {
 // 获取分组的比赛记录
 export function getMatchesByGroup(groupId) {
   return request({
-    url: `/api/matches/group/${groupId}`,
+    url: `/matches/group/${groupId}`,
     method: 'get'
   })
 }
@@ -53,7 +53,7 @@ export function getMatchesByGroup(groupId) {
 // 获取选手的比赛记录
 export function getMatchesByPlayer(playerId) {
   return request({
-    url: `/api/matches/player/${playerId}`,
+    url: `/matches/player/${playerId}`,
     method: 'get'
   })
 }
@@ -61,7 +61,7 @@ export function getMatchesByPlayer(playerId) {
 // 删除比赛记录
 export function deleteMatch(id) {
   return request({
-    url: `/api/matches/${id}`,
+    url: `/matches/${id}`,
     method: 'delete'
   })
 }
@@ -69,7 +69,7 @@ export function deleteMatch(id) {
 // 更新比赛结果
 export function updateMatchResult(id, player1Score, player2Score) {
   return request({
-    url: `/api/matches/${id}/result`,
+    url: `/matches/${id}/result`,
     method: 'put',
     params: {
       player1Score,
@@ -81,10 +81,30 @@ export function updateMatchResult(id, player1Score, player2Score) {
 // 更新比赛状态
 export function updateMatchStatus(id, status) {
   return request({
-    url: `/api/matches/${id}/status`,
+    url: `/matches/${id}/status`,
     method: 'put',
     params: {
       status
     }
+  })
+}
+
+// 更新比赛比分
+export function updateMatchScore(data) {
+  return request({
+    url: `/tournaments/${data.tournamentId}/matches/${data.matchId}/score`,
+    method: 'put',
+    data: {
+      player1Score: data.player1Score,
+      player2Score: data.player2Score
+    }
+  })
+}
+
+// 获取比赛详情
+export function getMatchDetail(matchId) {
+  return request({
+    url: `/matches/${matchId}`,
+    method: 'get'
   })
 }

@@ -633,50 +633,74 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         List<MatchRecord> matches = new ArrayList<>();
         int totalPlayers = players.size();
         int nextPowerOfTwo = Integer.highestOneBit(totalPlayers - 1) * 2;
-        int byeCount = nextPowerOfTwo - totalPlayers; // 轮空数量
-
-        // 按照积分排序，让成绩好的选手优先轮空
-        players.sort((a, b) -> b.getPoints() - a.getPoints());
-
-        List<Long> currentRoundPlayers = new ArrayList<>();
-        LocalDateTime now = LocalDateTime.now();
         
-        // 添加轮空的选手到下一轮
-        for (int i = 0; i < byeCount; i++) {
-            currentRoundPlayers.add(players.get(i).getPlayerId());
+        // 补充虚拟选手到2的幂次
+        while (players.size() < nextPowerOfTwo) {
+            players.add(null);
         }
+
+        // 按照标准淘汰赛对阵顺序重排选手
+        List<PlayerStats> orderedPlayers = new ArrayList<>(players.size());
+        reorderPlayersForKnockout(players, orderedPlayers, 0, players.size() - 1, 1);
+
+        LocalDateTime now = LocalDateTime.now();
+        int currentRound = 1;
+        int matchesInRound = nextPowerOfTwo / 2;
 
         // 生成第一轮比赛
-        for (int i = byeCount; i < players.size(); i += 2) {
-            if (i + 1 < players.size()) {
-                MatchRecord match = new MatchRecord();
-                match.setTournamentId(tournamentId);
-                match.setStageId(stageId);
-                match.setPlayer1Id(players.get(i).getPlayerId());
-                match.setPlayer2Id(players.get(i + 1).getPlayerId());
-                match.setPlayer1Score(0);
-                match.setPlayer2Score(0);
+        for (int i = 0; i < orderedPlayers.size(); i += 2) {
+            MatchRecord match = new MatchRecord();
+            match.setTournamentId(tournamentId);
+            match.setStageId(stageId);
+            
+            PlayerStats player1 = orderedPlayers.get(i);
+            PlayerStats player2 = orderedPlayers.get(i + 1);
+            
+            // 如果有一方是虚拟选手，另一方直接晋级
+            if (player1 == null && player2 == null) {
+                continue;
+            } else if (player1 == null) {
+                match.setPlayer1Id(player2.getPlayerId());
+                match.setPlayer2Id(player2.getPlayerId());
+                match.setStatus("FINISHED");
+                match.setWinnerId(player2.getPlayerId());
+            } else if (player2 == null) {
+                match.setPlayer1Id(player1.getPlayerId());
+                match.setPlayer2Id(player1.getPlayerId());
+                match.setStatus("FINISHED");
+                match.setWinnerId(player1.getPlayerId());
+            } else {
+                match.setPlayer1Id(player1.getPlayerId());
+                match.setPlayer2Id(player2.getPlayerId());
                 match.setStatus("PENDING");
-                match.setRound(1); // 第一轮
-                match.setCreatedAt(now);
-                match.setUpdatedAt(now);
-                matches.add(match);
             }
+            
+            match.setPlayer1Score(0);
+            match.setPlayer2Score(0);
+            match.setRound(currentRound);
+            match.setCreatedAt(now);
+            match.setUpdatedAt(now);
+            matches.add(match);
         }
 
-        // 生成后续轮次的对阵（预先生成）
-        int currentRound = 1;
-        int matchesInRound = (players.size() - byeCount) / 2;
-
-        while (matchesInRound > 0) {
+        // 生成后续轮次的占位比赛
+        while (matchesInRound > 1) {
             currentRound++;
             matchesInRound = matchesInRound / 2;
 
-            // 为每个预期的比赛创建占位记录
             for (int i = 0; i < matchesInRound; i++) {
                 MatchRecord match = new MatchRecord();
                 match.setTournamentId(tournamentId);
                 match.setStageId(stageId);
+                // 使用第一个有效选手的ID作为临时ID
+                PlayerStats firstPlayer = players.stream()
+                    .filter(p -> p != null)
+                    .findFirst()
+                    .orElse(null);
+                if (firstPlayer != null) {
+                    match.setPlayer1Id(firstPlayer.getPlayerId());
+                    match.setPlayer2Id(firstPlayer.getPlayerId());
+                }
                 match.setPlayer1Score(0);
                 match.setPlayer2Score(0);
                 match.setStatus("PENDING");
@@ -688,6 +712,26 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         }
 
         return matches;
+    }
+
+    /**
+     * 按照标准淘汰赛对阵顺序重排选手
+     * 1号位对阵最后一个位置，2号位对阵倒数第二个位置，以此类推
+     */
+    private void reorderPlayersForKnockout(List<PlayerStats> players, List<PlayerStats> result, int start, int end, int position) {
+        if (start > end) {
+            return;
+        }
+        
+        int mid = (start + end) / 2;
+        result.add(players.get(position - 1));
+        
+        if (start == end) {
+            return;
+        }
+        
+        reorderPlayersForKnockout(players, result, start, mid, position * 2);
+        reorderPlayersForKnockout(players, result, mid + 1, end, position * 2 + 1);
     }
 
     /**
