@@ -78,3 +78,11 @@ export function getGroupingStrategy(id) {
     method: 'get'
   })
 }
+// 获取用户参加的赛事列表
+export function getUserTournaments(params) {
+  return request({
+    url: '/tournaments/user/registered',
+    method: 'get',
+    params
+  })
+}
