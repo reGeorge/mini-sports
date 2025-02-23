@@ -92,4 +92,13 @@
         ORDER BY order_num
         LIMIT 1
     </select>
+
+    <select id="selectByTournamentAndType" resultMap="StageMap">
+        SELECT 
+        <include refid="Base_Column_List"/>
+        FROM tournament_stage
+        WHERE tournament_id = #{tournamentId}
+        AND type = #{type}
+        LIMIT 1
+    </select>
 </mapper>

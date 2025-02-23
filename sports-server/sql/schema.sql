@@ -147,16 +147,13 @@ CREATE TABLE match_record (
 CREATE TABLE points_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL COMMENT '用户ID',
-    tournament_id BIGINT NOT NULL COMMENT '赛事ID',
-    match_id BIGINT NOT NULL COMMENT '比赛ID',
-    points_change INT NOT NULL COMMENT '积分变化值',
-    points_before INT NOT NULL COMMENT '变化前积分',
-    points_after INT NOT NULL COMMENT '变化后积分',
-    type VARCHAR(20) NOT NULL COMMENT '类型：WIN-胜利,LOSE-失败',
-    description VARCHAR(255) COMMENT '描述',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    rule_id BIGINT NOT NULL COMMENT '规则ID',
+    type VARCHAR(50) NOT NULL COMMENT '类型：WIN-胜利,LOSE-失败',
+    points INT NOT NULL COMMENT '积分值',
+    balance INT NOT NULL COMMENT '积分余额',
+    description VARCHAR(200) COMMENT '描述',
+    ref_id BIGINT COMMENT '关联ID',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
     FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (tournament_id) REFERENCES tournament(id),
-    FOREIGN KEY (match_id) REFERENCES match_record(id)
+    FOREIGN KEY (rule_id) REFERENCES points_rule(id)
 ) COMMENT '积分记录表';

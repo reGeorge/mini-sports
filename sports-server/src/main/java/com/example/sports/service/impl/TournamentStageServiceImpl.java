@@ -68,23 +68,26 @@ public class TournamentStageServiceImpl implements TournamentStageService {
      * @return int[] 返回数组，第一个元素是分组数，第二个元素是每组人数
      */
     private int[] calculateGrouping(int totalPlayers) {
-        // 理想情况：每组4-6人，便于安排循环赛
         int[] result = new int[2];
         
-        if (totalPlayers <= 6) {
-            // 人数较少时只分一个组
+        if (totalPlayers <= 5) {
+            // 5人及以下分1组
             result[0] = 1;
             result[1] = totalPlayers;
-        } else if (totalPlayers <= 12) {
-            // 7-12人分2组
+        } else if (totalPlayers <= 10) {
+            // 6-10人分2组
             result[0] = 2;
-            result[1] = (totalPlayers + 1) / 2;
-        } else if (totalPlayers <= 24) {
-            // 13-24人分4组
+            result[1] = (totalPlayers + 1) / 2; // 向上取整，确保第一组人数较多
+        } else if (totalPlayers <= 15) {
+            // 11-15人分3组
+            result[0] = 3;
+            result[1] = (totalPlayers + 2) / 3;
+        } else if (totalPlayers <= 20) {
+            // 16-20人分4组
             result[0] = 4;
             result[1] = (totalPlayers + 3) / 4;
         } else {
-            // 25人以上分8组
+            // 20人以上分8组
             result[0] = 8;
             result[1] = (totalPlayers + 7) / 8;
         }
@@ -151,12 +154,17 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         int totalPlayers = registrations.size();
         int[] groupingPlan = calculateGrouping(totalPlayers);
         int numGroups = groupingPlan[0];
-        int playersPerGroup = groupingPlan[1];
-        int qualifiersPerGroup = calculateQualifiers(numGroups, playersPerGroup);
+        int maxPlayersPerGroup = groupingPlan[1];
 
         // 随机打乱参赛者顺序
         Collections.shuffle(registrations);
 
+        // 计算每组实际人数
+        int remainingPlayers = totalPlayers;
+        int startIdx = 0;
+        List<TournamentGroup> groups = new ArrayList<>();
+        
+        // 先创建所有小组
         for (int i = 0; i < numGroups; i++) {
             TournamentGroup group = new TournamentGroup();
             group.setTournamentId(tournamentId);
@@ -165,20 +173,34 @@ public class TournamentStageServiceImpl implements TournamentStageService {
             group.setCreatedAt(now);
             group.setUpdatedAt(now);
             tournamentGroupMapper.insert(group);
+            groups.add(group);
+        }
 
-            // 计算当前组的实际人数
-            int startIdx = i * playersPerGroup;
-            int endIdx = Math.min((i + 1) * playersPerGroup, totalPlayers);
-            List<TournamentRegistration> groupPlayers = registrations.subList(startIdx, endIdx);
+        // 分配选手到小组
+        for (int i = 0; i < numGroups; i++) {
+            int currentGroupPlayers;
+            if (i == numGroups - 1) {
+                // 最后一组分配剩余所有选手
+                currentGroupPlayers = remainingPlayers;
+            } else {
+                // 其他组尽量平均分配
+                currentGroupPlayers = Math.min(maxPlayersPerGroup, remainingPlayers / (numGroups - i));
+            }
+            
+            TournamentGroup group = groups.get(i);
+            
+            // 获取当前组的选手
+            List<TournamentRegistration> groupPlayers = registrations.subList(startIdx, startIdx + currentGroupPlayers);
+            log.info("第{}组分配了{}名选手", i + 1, groupPlayers.size());
 
             // 生成组内循环赛对阵表
-            List<MatchRecord> matches = new ArrayList<>();
             for (int j = 0; j < groupPlayers.size(); j++) {
                 for (int k = j + 1; k < groupPlayers.size(); k++) {
                     MatchRecord match = new MatchRecord();
                     match.setTournamentId(tournamentId);
                     match.setStageId(groupStage.getId());
                     match.setGroupId(group.getId());
+                    match.setGroupName(group.getName());  // 添加组名
                     match.setPlayer1Id(groupPlayers.get(j).getUserId());
                     match.setPlayer2Id(groupPlayers.get(k).getUserId());
                     match.setStatus("PENDING");
@@ -186,15 +208,12 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                     match.setPlayer2Score(0);
                     match.setCreatedAt(now);
                     match.setUpdatedAt(now);
-                    matches.add(match);
+                    matchRecordMapper.insert(match);
                 }
             }
 
-            // 优化对阵顺序
-            List<MatchRecord> optimizedMatches = optimizeMatchOrder(matches);
-            for (MatchRecord match : optimizedMatches) {
-                matchRecordMapper.insert(match);
-            }
+            startIdx += currentGroupPlayers;
+            remainingPlayers -= currentGroupPlayers;
         }
 
         // 3.3 创建淘汰赛阶段
@@ -405,12 +424,21 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                     .map(MatchRecord::getWinnerId)
                     .collect(Collectors.toList());
             
+            // 如果只有一个获胜者，说明是决赛结束了
+            if (winners.size() == 1) {
+                finishTournament(stage.getTournamentId(), winners.get(0));
+                return;
+            }
+            
             // 4. 获取下一轮比赛
             List<MatchRecord> nextRoundMatches = matchRecordMapper.selectByRound(
                 stage.getId(), finishedMatch.getRound() + 1);
             
-            if (!nextRoundMatches.isEmpty()) {
-                // 5. 更新下一轮比赛的选手
+            if (nextRoundMatches.isEmpty()) {
+                // 生成下一轮比赛
+                generateNextRoundMatches(stage.getId(), finishedMatch.getRound(), winners);
+            } else {
+                // 更新下一轮比赛的选手
                 for (int i = 0; i < winners.size(); i += 2) {
                     if (i/2 < nextRoundMatches.size()) {
                         MatchRecord nextMatch = nextRoundMatches.get(i/2);
@@ -427,9 +455,6 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                         matchRecordMapper.update(nextMatch);
                     }
                 }
-            } else {
-                // 没有下一轮比赛，说明是决赛结束了
-                finishTournament(stage.getTournamentId(), finishedMatch.getWinnerId());
             }
         }
     }
@@ -452,21 +477,29 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         
         // 生成下一轮对阵
         for (int i = 0; i < winners.size(); i += 2) {
-            if (i + 1 >= winners.size()) {
-                continue;
-            }
-            
             MatchRecord nextMatch = new MatchRecord();
             nextMatch.setTournamentId(stage.getTournamentId());
             nextMatch.setStageId(stageId);
-            nextMatch.setPlayer1Id(winners.get(i));
-            nextMatch.setPlayer2Id(winners.get(i + 1));
             nextMatch.setRound(currentRound + 1);
-            nextMatch.setStatus("PENDING");
-            nextMatch.setPlayer1Score(0);
-            nextMatch.setPlayer2Score(0);
             nextMatch.setCreatedAt(now);
             nextMatch.setUpdatedAt(now);
+            
+            if (i + 1 < winners.size()) {
+                // 正常对阵
+                nextMatch.setPlayer1Id(winners.get(i));
+                nextMatch.setPlayer2Id(winners.get(i + 1));
+                nextMatch.setStatus("PENDING");
+                nextMatch.setPlayer1Score(0);
+                nextMatch.setPlayer2Score(0);
+            } else {
+                // 最后一个选手自动晋级
+                nextMatch.setPlayer1Id(winners.get(i));
+                nextMatch.setPlayer2Id(null);
+                nextMatch.setStatus("FINISHED");
+                nextMatch.setWinnerId(winners.get(i));
+                nextMatch.setPlayer1Score(2);
+                nextMatch.setPlayer2Score(0);
+            }
             
             matchRecordMapper.insert(nextMatch);
         }
@@ -544,12 +577,10 @@ public class TournamentStageServiceImpl implements TournamentStageService {
     private void recordPointsChange(MatchRecord match, User user, int pointsChange, String type) {
         PointsRecord record = new PointsRecord();
         record.setUserId(user.getId());
-        record.setTournamentId(match.getTournamentId());
-        record.setMatchId(match.getId());
-        record.setPointsChange(pointsChange);
-        record.setPointsBefore(user.getPoints());
-        record.setPointsAfter(Math.max(0, user.getPoints() + pointsChange));
+        record.setRuleId(1L); // 使用默认规则ID
         record.setType(type);
+        record.setPoints(Math.abs(pointsChange));
+        record.setBalance(Math.max(0, user.getPoints() + pointsChange));
         record.setDescription(String.format(
             "%s在比赛中%s，%s%d积分",
             user.getNickname(),
@@ -557,8 +588,8 @@ public class TournamentStageServiceImpl implements TournamentStageService {
             pointsChange >= 0 ? "获得" : "失去",
             Math.abs(pointsChange)
         ));
+        record.setRefId(match.getId());
         record.setCreatedAt(LocalDateTime.now());
-        record.setUpdatedAt(LocalDateTime.now());
         
         pointsRecordMapper.insert(record);
     }
@@ -571,7 +602,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         List<TournamentGroup> groups = tournamentGroupMapper.selectByStageId(groupStageId);
         List<PlayerStats> allQualifiedPlayers = new ArrayList<>();
 
-        // 2. 计算每个小组的选手成绩并选出前4名
+        // 2. 计算每个小组的选手成绩
         for (TournamentGroup group : groups) {
             List<MatchRecord> groupMatches = matchRecordMapper.selectByGroupId(group.getId());
             Map<Long, PlayerStats> playerStatsMap = new HashMap<>();
@@ -593,9 +624,11 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 return b.getTotalScore() - a.getTotalScore(); // 按总得分降序
             });
 
-            // 2.3 选取前4名选手
-            int qualifiedCount = Math.min(4, sortedPlayers.size());
-            allQualifiedPlayers.addAll(sortedPlayers.subList(0, qualifiedCount));
+            // 2.3 根据小组数量确定每组出线人数
+            int qualifiedCount = calculateQualifiers(groups.size(), sortedPlayers.size());
+            if (qualifiedCount > 0 && !sortedPlayers.isEmpty()) {
+                allQualifiedPlayers.addAll(sortedPlayers.subList(0, Math.min(qualifiedCount, sortedPlayers.size())));
+            }
         }
 
         // 3. 获取淘汰赛阶段
@@ -611,6 +644,12 @@ public class TournamentStageServiceImpl implements TournamentStageService {
         for (MatchRecord match : knockoutMatches) {
             matchRecordMapper.insert(match);
         }
+        
+        // 6. 更新淘汰赛阶段状态为进行中
+        knockoutStage.setStatus("ONGOING");
+        knockoutStage.setStartTime(LocalDateTime.now());
+        knockoutStage.setUpdatedAt(LocalDateTime.now());
+        tournamentStageMapper.update(knockoutStage);
     }
 
     /**
@@ -629,109 +668,156 @@ public class TournamentStageServiceImpl implements TournamentStageService {
     /**
      * 生成淘汰赛对阵
      */
-    private List<MatchRecord> generateKnockoutPairings(List<PlayerStats> players, Long tournamentId, Long stageId) {
+    private List<MatchRecord> generateKnockoutPairings(List<PlayerStats> players, Long tournamentId, Long knockoutStageId) {
         List<MatchRecord> matches = new ArrayList<>();
-        int totalPlayers = players.size();
-        int nextPowerOfTwo = Integer.highestOneBit(totalPlayers - 1) * 2;
-        
-        // 补充虚拟选手到2的幂次
-        while (players.size() < nextPowerOfTwo) {
-            players.add(null);
-        }
-
-        // 按照标准淘汰赛对阵顺序重排选手
-        List<PlayerStats> orderedPlayers = new ArrayList<>(players.size());
-        reorderPlayersForKnockout(players, orderedPlayers, 0, players.size() - 1, 1);
-
         LocalDateTime now = LocalDateTime.now();
-        int currentRound = 1;
-        int matchesInRound = nextPowerOfTwo / 2;
-
-        // 生成第一轮比赛
-        for (int i = 0; i < orderedPlayers.size(); i += 2) {
+        
+        // 1. 获取小组赛阶段ID
+        TournamentStage groupStage = tournamentStageMapper.selectByTournamentAndType(tournamentId, "GROUP");
+        if (groupStage == null) {
+            throw new IllegalStateException("未找到小组赛阶段");
+        }
+        
+        // 2. 按小组分组并排序
+        Map<String, List<PlayerStats>> groupedPlayers = new HashMap<>();
+        
+        // 获取所有小组
+        List<TournamentGroup> groups = tournamentGroupMapper.selectByStageId(groupStage.getId());
+        Map<Long, String> groupNameMap = new HashMap<>();
+        for (TournamentGroup group : groups) {
+            groupNameMap.put(group.getId(), group.getName());
+        }
+        
+        // 获取所有小组赛比赛记录
+        List<MatchRecord> groupMatches = matchRecordMapper.selectByTournamentAndStage(tournamentId, groupStage.getId());
+        
+        // 为每个选手找到其所属小组
+        for (PlayerStats player : players) {
+            String groupName = groupMatches.stream()
+                .filter(m -> m.getPlayer1Id().equals(player.getPlayerId()) || 
+                           m.getPlayer2Id().equals(player.getPlayerId()))
+                .findFirst()
+                .map(m -> groupNameMap.get(m.getGroupId()))
+                .orElse(null);
+                
+            if (groupName != null) {
+                groupedPlayers.computeIfAbsent(groupName, k -> new ArrayList<>()).add(player);
+            }
+        }
+        
+        // 3. 对每个小组的选手按成绩排序
+        for (List<PlayerStats> groupPlayers : groupedPlayers.values()) {
+            groupPlayers.sort((a, b) -> {
+                if (a.getPoints() != b.getPoints()) {
+                    return b.getPoints() - a.getPoints();
+                }
+                if (a.getScoreDiff() != b.getScoreDiff()) {
+                    return b.getScoreDiff() - a.getScoreDiff();
+                }
+                return b.getTotalScore() - a.getTotalScore();
+            });
+        }
+        
+        // 4. 生成对阵
+        List<String> groupNames = new ArrayList<>(groupedPlayers.keySet());
+        Collections.sort(groupNames); // 确保小组顺序固定
+        
+        // 创建对阵列表
+        List<Pair<PlayerStats, PlayerStats>> pairings = new ArrayList<>();
+        
+        // 根据小组数量使用不同的对阵策略
+        if (groupNames.size() == 2) {
+            // 两个小组的情况：A1 vs B2, B1 vs A2
+            String groupA = groupNames.get(0);
+            String groupB = groupNames.get(1);
+            List<PlayerStats> groupAPlayers = groupedPlayers.get(groupA);
+            List<PlayerStats> groupBPlayers = groupedPlayers.get(groupB);
+            
+            if (!groupAPlayers.isEmpty() && !groupBPlayers.isEmpty()) {
+                // A1 vs B2
+                if (groupAPlayers.size() >= 1 && groupBPlayers.size() >= 2) {
+                    pairings.add(new Pair<>(groupAPlayers.get(0), groupBPlayers.get(1)));
+                }
+                // B1 vs A2
+                if (groupBPlayers.size() >= 1 && groupAPlayers.size() >= 2) {
+                    pairings.add(new Pair<>(groupBPlayers.get(0), groupAPlayers.get(1)));
+                }
+            }
+        } else if (groupNames.size() == 4) {
+            // 四个小组的情况：A1 vs D2, B1 vs C2, C1 vs B2, D1 vs A2
+            for (int i = 0; i < groupNames.size(); i++) {
+                String currentGroup = groupNames.get(i);
+                String oppositeGroup = groupNames.get((i + 2) % 4);
+                List<PlayerStats> currentGroupPlayers = groupedPlayers.get(currentGroup);
+                List<PlayerStats> oppositeGroupPlayers = groupedPlayers.get(oppositeGroup);
+                
+                if (!currentGroupPlayers.isEmpty() && !oppositeGroupPlayers.isEmpty() 
+                    && currentGroupPlayers.size() >= 1 && oppositeGroupPlayers.size() >= 2) {
+                    pairings.add(new Pair<>(
+                        currentGroupPlayers.get(0), // 当前组第一
+                        oppositeGroupPlayers.get(1) // 对面组第二
+                    ));
+                }
+            }
+        } else {
+            // 其他情况（如8个小组）：按照标准对阵表生成
+            // A1 vs H2, B1 vs G2, C1 vs F2, D1 vs E2, E1 vs D2, F1 vs C2, G1 vs B2, H1 vs A2
+            int n = groupNames.size();
+            for (int i = 0; i < n; i++) {
+                String currentGroup = groupNames.get(i);
+                String oppositeGroup = groupNames.get(n - 1 - ((i + n/2) % n));
+                List<PlayerStats> currentGroupPlayers = groupedPlayers.get(currentGroup);
+                List<PlayerStats> oppositeGroupPlayers = groupedPlayers.get(oppositeGroup);
+                
+                if (!currentGroupPlayers.isEmpty() && !oppositeGroupPlayers.isEmpty() 
+                    && currentGroupPlayers.size() >= 1 && oppositeGroupPlayers.size() >= 2) {
+                    pairings.add(new Pair<>(
+                        currentGroupPlayers.get(0), // 当前组第一
+                        oppositeGroupPlayers.get(1) // 对面组第二
+                    ));
+                }
+            }
+        }
+        
+        // 5. 生成比赛记录
+        for (Pair<PlayerStats, PlayerStats> pairing : pairings) {
             MatchRecord match = new MatchRecord();
             match.setTournamentId(tournamentId);
-            match.setStageId(stageId);
-            
-            PlayerStats player1 = orderedPlayers.get(i);
-            PlayerStats player2 = orderedPlayers.get(i + 1);
-            
-            // 如果有一方是虚拟选手，另一方直接晋级
-            if (player1 == null && player2 == null) {
-                continue;
-            } else if (player1 == null) {
-                match.setPlayer1Id(player2.getPlayerId());
-                match.setPlayer2Id(player2.getPlayerId());
-                match.setStatus("FINISHED");
-                match.setWinnerId(player2.getPlayerId());
-            } else if (player2 == null) {
-                match.setPlayer1Id(player1.getPlayerId());
-                match.setPlayer2Id(player1.getPlayerId());
-                match.setStatus("FINISHED");
-                match.setWinnerId(player1.getPlayerId());
-            } else {
-                match.setPlayer1Id(player1.getPlayerId());
-                match.setPlayer2Id(player2.getPlayerId());
-                match.setStatus("PENDING");
-            }
-            
+            match.setStageId(knockoutStageId); // 使用淘汰赛阶段ID
+            match.setRound(1); // 第一轮
+            match.setPlayer1Id(pairing.getFirst().getPlayerId());
+            match.setPlayer2Id(pairing.getSecond().getPlayerId());
+            match.setStatus("PENDING");
             match.setPlayer1Score(0);
             match.setPlayer2Score(0);
-            match.setRound(currentRound);
             match.setCreatedAt(now);
             match.setUpdatedAt(now);
             matches.add(match);
         }
-
-        // 生成后续轮次的占位比赛
-        while (matchesInRound > 1) {
-            currentRound++;
-            matchesInRound = matchesInRound / 2;
-
-            for (int i = 0; i < matchesInRound; i++) {
-                MatchRecord match = new MatchRecord();
-                match.setTournamentId(tournamentId);
-                match.setStageId(stageId);
-                // 使用第一个有效选手的ID作为临时ID
-                PlayerStats firstPlayer = players.stream()
-                    .filter(p -> p != null)
-                    .findFirst()
-                    .orElse(null);
-                if (firstPlayer != null) {
-                    match.setPlayer1Id(firstPlayer.getPlayerId());
-                    match.setPlayer2Id(firstPlayer.getPlayerId());
-                }
-                match.setPlayer1Score(0);
-                match.setPlayer2Score(0);
-                match.setStatus("PENDING");
-                match.setRound(currentRound);
-                match.setCreatedAt(now);
-                match.setUpdatedAt(now);
-                matches.add(match);
-            }
-        }
-
+        
+        log.info("生成淘汰赛对阵: {}", matches.size());
         return matches;
     }
-
+    
     /**
-     * 按照标准淘汰赛对阵顺序重排选手
-     * 1号位对阵最后一个位置，2号位对阵倒数第二个位置，以此类推
+     * 简单的配对类
      */
-    private void reorderPlayersForKnockout(List<PlayerStats> players, List<PlayerStats> result, int start, int end, int position) {
-        if (start > end) {
-            return;
+    private static class Pair<T, U> {
+        private final T first;
+        private final U second;
+        
+        public Pair(T first, U second) {
+            this.first = first;
+            this.second = second;
         }
         
-        int mid = (start + end) / 2;
-        result.add(players.get(position - 1));
-        
-        if (start == end) {
-            return;
+        public T getFirst() {
+            return first;
         }
         
-        reorderPlayersForKnockout(players, result, start, mid, position * 2);
-        reorderPlayersForKnockout(players, result, mid + 1, end, position * 2 + 1);
+        public U getSecond() {
+            return second;
+        }
     }
 
     /**

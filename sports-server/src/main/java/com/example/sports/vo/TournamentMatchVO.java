@@ -16,6 +16,7 @@ public class TournamentMatchVO {
     private String status;  // PENDING, ONGOING, FINISHED
     private String winner;  // PLAYER1, PLAYER2
     private Integer round; // 比赛轮次
+    private String groupName; // 分组名称
 
     public Long getId() {
         return id;
@@ -96,6 +97,14 @@ public class TournamentMatchVO {
     public void setRound(Integer round) {
         this.round = round;
     }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
+    }
     
     public TournamentMatchVO() {
     }
@@ -120,6 +129,7 @@ public class TournamentMatchVO {
         vo.setPlayer2Score(record.getPlayer2Score());
         vo.setStatus(record.getStatus());
         vo.setRound(record.getRound());
+        vo.setGroupName(record.getGroupName());
 
         // 获取并设置选手姓名
         if (record.getPlayer1Id() != null) {

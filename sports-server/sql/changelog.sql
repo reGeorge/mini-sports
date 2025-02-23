@@ -138,6 +138,13 @@ INSERT INTO permission (name, code, description) VALUES
   - 添加积分相关权限
   - 优化角色和权限的初始化数据
 
+## 2024-02-23 (V1.0.7)
+- 重构积分记录表
+  - 移除tournament_id和match_id字段
+  - 添加rule_id和ref_id字段
+  - 优化字段类型和约束
+  - 重新设计积分记录结构
+
 -- 具体的 SQL 变更语句
 
 -- V1.0.1 用户表增强
@@ -174,3 +181,22 @@ INSERT INTO permission (name, code, description) VALUES
 INSERT INTO permission (name, code, description) VALUES
 ('积分查看', 'points:view', '查看积分记录'),
 ('积分管理', 'points:manage', '管理用户积分'); 
+
+-- V1.0.6 比赛分组新增字段  group_name VARCHAR(50) COMMENT '分组名称' AFTER group_id;
+ALTER TABLE match_record ADD COLUMN group_name VARCHAR(50) COMMENT '分组名称';
+
+-- V1.0.7 重构积分记录表
+DROP TABLE IF EXISTS points_record;
+CREATE TABLE points_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    rule_id BIGINT NOT NULL COMMENT '规则ID',
+    type VARCHAR(50) NOT NULL COMMENT '类型：WIN-胜利,LOSE-失败',
+    points INT NOT NULL COMMENT '积分值',
+    balance INT NOT NULL COMMENT '积分余额',
+    description VARCHAR(200) COMMENT '描述',
+    ref_id BIGINT COMMENT '关联ID',
+    created_at DATETIME NOT NULL COMMENT '创建时间',
+    FOREIGN KEY (user_id) REFERENCES user(id),
+    FOREIGN KEY (rule_id) REFERENCES points_rule(id)
+) COMMENT '积分记录表';

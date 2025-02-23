@@ -36,4 +36,9 @@ public interface TournamentStageMapper {
     TournamentStage selectCurrentStage(Long tournamentId);
 
     TournamentStage selectNextStage(Long tournamentId, Integer currentOrderNum);
+
+    /**
+     * 根据赛事ID和阶段类型查询赛事阶段
+     */
+    TournamentStage selectByTournamentAndType(Long tournamentId, String type);
 }

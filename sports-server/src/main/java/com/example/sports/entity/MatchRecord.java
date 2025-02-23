@@ -7,6 +7,7 @@ public class MatchRecord {
     private Long tournamentId;      // 赛事ID
     private Long stageId;          // 赛事阶段ID
     private Long groupId;          // 分组ID（小组赛阶段）
+    private String groupName;      // 分组名称
     private Long player1Id;        // 选手1 ID
     private Long player2Id;        // 选手2 ID
     private Integer player1Score;  // 选手1得分
@@ -52,6 +53,14 @@ public class MatchRecord {
 
     public void setGroupId(Long groupId) {
         this.groupId = groupId;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 
     public Long getPlayer1Id() {

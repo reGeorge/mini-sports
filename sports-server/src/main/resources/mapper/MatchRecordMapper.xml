@@ -7,6 +7,7 @@
         <result property="tournamentId" column="tournament_id"/>
         <result property="stageId" column="stage_id"/>
         <result property="groupId" column="group_id"/>
+        <result property="groupName" column="group_name"/>
         <result property="player1Id" column="player1_id"/>
         <result property="player2Id" column="player2_id"/>
         <result property="player1Score" column="player1_score"/>
@@ -23,7 +24,7 @@
     </resultMap>
 
     <sql id="Base_Column_List">
-        id, tournament_id, stage_id, group_id, player1_id, player2_id,
+        id, tournament_id, stage_id, group_id, group_name, player1_id, player2_id,
         player1_score, player2_score, winner_id, status, start_time, end_time,
         round, court_number, referee_id, created_at, updated_at
     </sql>
@@ -67,11 +68,11 @@
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO match_record (
-            tournament_id, stage_id, group_id, player1_id, player2_id,
+            tournament_id, stage_id, group_id, group_name, player1_id, player2_id,
             player1_score, player2_score, winner_id, status, start_time,
             end_time, round, court_number, referee_id, created_at, updated_at
         ) VALUES (
-            #{tournamentId}, #{stageId}, #{groupId}, #{player1Id}, #{player2Id},
+            #{tournamentId}, #{stageId}, #{groupId}, #{groupName}, #{player1Id}, #{player2Id},
             #{player1Score}, #{player2Score}, #{winnerId}, #{status}, #{startTime},
             #{endTime}, #{round}, #{courtNumber}, #{refereeId}, #{createdAt}, #{updatedAt}
         )
@@ -83,6 +84,7 @@
             tournament_id = #{tournamentId},
             stage_id = #{stageId},
             group_id = #{groupId},
+            group_name = #{groupName},
             player1_id = #{player1Id},
             player2_id = #{player2Id},
             player1_score = #{player1Score},

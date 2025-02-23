@@ -4,43 +4,34 @@
     <resultMap id="PointsRecordMap" type="com.example.sports.entity.PointsRecord">
         <id property="id" column="id"/>
         <result property="userId" column="user_id"/>
-        <result property="tournamentId" column="tournament_id"/>
-        <result property="matchId" column="match_id"/>
-        <result property="pointsChange" column="points_change"/>
-        <result property="pointsBefore" column="points_before"/>
-        <result property="pointsAfter" column="points_after"/>
+        <result property="ruleId" column="rule_id"/>
         <result property="type" column="type"/>
+        <result property="points" column="points"/>
+        <result property="balance" column="balance"/>
         <result property="description" column="description"/>
+        <result property="refId" column="ref_id"/>
         <result property="createdAt" column="created_at"/>
-        <result property="updatedAt" column="updated_at"/>
     </resultMap>
 
     <insert id="insert" parameterType="com.example.sports.entity.PointsRecord" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO points_record (
-            user_id, tournament_id, match_id, points_change, points_before, points_after,
-            type, description, created_at, updated_at
+            user_id, rule_id, type, points, balance,
+            description, ref_id, created_at
         ) VALUES (
-            #{userId}, #{tournamentId}, #{matchId}, #{pointsChange}, #{pointsBefore}, #{pointsAfter},
-            #{type}, #{description}, #{createdAt}, #{updatedAt}
+            #{userId}, #{ruleId}, #{type}, #{points}, #{balance},
+            #{description}, #{refId}, #{createdAt}
         )
     </insert>
 
-    <select id="selectByTournamentId" resultMap="PointsRecordMap">
+    <select id="selectByRefId" resultMap="PointsRecordMap">
         SELECT * FROM points_record
-        WHERE tournament_id = #{tournamentId}
+        WHERE ref_id = #{refId}
         ORDER BY created_at DESC
     </select>
 
     <select id="selectByUserId" resultMap="PointsRecordMap">
         SELECT * FROM points_record
         WHERE user_id = #{userId}
-        ORDER BY created_at DESC
-    </select>
-
-    <select id="selectByTournamentAndUser" resultMap="PointsRecordMap">
-        SELECT * FROM points_record
-        WHERE tournament_id = #{tournamentId}
-        AND user_id = #{userId}
         ORDER BY created_at DESC
     </select>
 </mapper>
