@@ -683,6 +683,7 @@ public class TournamentStageServiceImpl implements TournamentStageService {
                 opponentPoints));
             record.setRefId(match.getId());
             record.setCreatedAt(LocalDateTime.now());
+            record.setRuleId(0L);
             
             pointsRecordMapper.insert(record);
         } catch (Exception e) {

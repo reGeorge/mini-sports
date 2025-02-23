@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.example.sports.mapper.TournamentMapper">
+
+ <!-- 定义 TournamentMap -->
+    <resultMap id="TournamentMap" type="com.example.sports.entity.Tournament">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="location" column="location"/>
+        <result property="maxPlayers" column="max_players"/>
+        <result property="currentPlayers" column="current_players"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="level" column="level"/>
+        <result property="entryFee" column="entry_fee"/>
+        <result property="createdBy" column="created_by"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
     
     <!-- 基础列 -->
     <sql id="Base_Column_List">
@@ -97,9 +116,26 @@
     
     <!-- 减少当前参与人数 -->
     <update id="decrementCurrentPlayers">
-        UPDATE tournament 
+        UPDATE tournament
         SET current_players = current_players - 1
         WHERE id = #{id}
-        AND current_players > 0
     </update>
+
+    <!-- 获取用户参加的赛事列表 -->
+    <select id="selectUserTournaments" resultMap="TournamentMap">
+        SELECT DISTINCT t.*
+        FROM tournament t
+        INNER JOIN tournament_registration r ON t.id = r.tournament_id
+        WHERE r.user_id = #{userId}
+        ORDER BY t.created_at DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <!-- 获取用户参加的赛事总数 -->
+    <select id="countUserTournaments" resultType="int">
+        SELECT COUNT(DISTINCT t.id)
+        FROM tournament t
+        INNER JOIN tournament_registration r ON t.id = r.tournament_id
+        WHERE r.user_id = #{userId}
+    </select>
 </mapper> 

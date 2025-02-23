@@ -99,7 +99,7 @@ const routes = [
     component: () => import('@/views/admin/AdminRegister.vue')
   },
   {
-    path: '/match/history',
+    path: '/match/history/:tournamentId?',
     name: 'MatchHistory',
     component: () => import('@/views/match/MatchHistory.vue'),
     meta: { 

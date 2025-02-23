@@ -6,6 +6,7 @@ import com.example.sports.entity.TournamentStage;
 import com.example.sports.service.TournamentService;
 import com.example.sports.service.TournamentStageService;
 import com.example.sports.utils.TournamentGroupingStrategy;
+import com.example.sports.utils.SecurityUtils;
 import com.example.sports.vo.MatchScoreVO;
 import com.example.sports.vo.PageVO;
 import com.example.sports.vo.TournamentQueryVO;
@@ -128,6 +129,17 @@ public class TournamentController {
             log.error("更新比赛比分失败", e);
             throw e;
         }
+    }
+
+    /**
+     * 获取用户参加的赛事列表
+     */
+    @GetMapping("/user/registered")
+    public Result<PageVO<Tournament>> getUserTournaments(
+            @RequestParam(defaultValue = "1") Integer pageNum,
+            @RequestParam(defaultValue = "10") Integer pageSize) {
+        Long userId = SecurityUtils.getCurrentUserId();
+        return Result.success(tournamentService.getUserTournaments(userId, pageNum, pageSize));
     }
 
     /**

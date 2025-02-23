@@ -48,4 +48,14 @@ public interface TournamentMapper {
      * 减少当前参与人数
      */
     int decrementCurrentPlayers(@Param("id") Long id);
+
+    /**
+     * 获取用户参加的赛事列表
+     */
+    List<Tournament> selectUserTournaments(@Param("userId") Long userId, @Param("offset") int offset, @Param("limit") Integer limit);
+
+    /**
+     * 获取用户参加的赛事总数
+     */
+    int countUserTournaments(@Param("userId") Long userId);
 } 

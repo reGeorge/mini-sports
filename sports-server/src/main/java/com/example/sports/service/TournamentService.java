@@ -46,4 +46,13 @@ public interface TournamentService {
      * 获取已报名人数
      */
     int getRegisteredCount(Long tournamentId);
+
+    /**
+     * 获取用户参加的赛事列表
+     * @param userId 用户ID
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @return 分页的赛事列表
+     */
+    PageVO<Tournament> getUserTournaments(Long userId, Integer pageNum, Integer pageSize);
 }

@@ -136,7 +136,7 @@ export default {
     }
 
     const goToMyEvents = () => {
-      router.push('/user/events')
+      router.push('/match/history')
     }
 
     const goToEventRegister = () => {

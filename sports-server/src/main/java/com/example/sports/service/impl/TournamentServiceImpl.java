@@ -145,4 +145,19 @@ public class TournamentServiceImpl implements TournamentService {
         }
         return tournament.getCurrentPlayers();
     }
+
+    @Override
+    public PageVO<Tournament> getUserTournaments(Long userId, Integer pageNum, Integer pageSize) {
+        // 计算偏移量
+        int offset = (pageNum - 1) * pageSize;
+        
+        // 获取用户参加的赛事列表
+        List<Tournament> tournaments = tournamentMapper.selectUserTournaments(userId, offset, pageSize);
+        
+        // 获取总数
+        int total = tournamentMapper.countUserTournaments(userId);
+        
+        // 返回分页数据
+        return new PageVO<>(tournaments, total, pageNum, pageSize);
+    }
 }
