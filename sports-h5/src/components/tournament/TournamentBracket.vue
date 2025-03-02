@@ -5,16 +5,44 @@
       <div v-for="(round, roundIndex) in rounds" :key="roundIndex" class="round">
         <div class="round-title">{{ getRoundTitle(roundIndex) }}</div>
         <div class="matches">
-          <div v-for="match in round" :key="match.id" class="match">
-            <div class="match-wrapper" @click="handleMatchClick(match)">
-              <div class="player" :class="{ 'winner': match.winner === 'PLAYER1' }">
-                <span class="player-name">{{ match.player1Name || '轮空' }}</span>
-                <span class="score">{{ match.player1Score || 0 }}</span>
+          <div v-for="(match, matchIndex) in round" :key="match.id" class="match-container">
+            <div class="match">
+              <div class="match-wrapper" @click="handleMatchClick(match)">
+                <div class="player" :class="{ 'winner': match.winner === 'PLAYER1' }">
+                  <span class="player-name">{{ match.player1Name || '轮空' }}</span>
+                  <span class="score">{{ match.player1Score || 0 }}</span>
+                </div>
+                <div class="player" :class="{ 'winner': match.winner === 'PLAYER2' }">
+                  <span class="player-name">{{ match.player2Name || '轮空' }}</span>
+                  <span class="score">{{ match.player2Score || 0 }}</span>
+                </div>
               </div>
-              <div class="player" :class="{ 'winner': match.winner === 'PLAYER2' }">
-                <span class="player-name">{{ match.player2Name || '轮空' }}</span>
-                <span class="score">{{ match.player2Score || 0 }}</span>
-              </div>
+              
+              <!-- 水平连接线和连接点 -->
+              <template v-if="roundIndex < rounds.length - 1">
+                <div class="connector horizontal"></div>
+                <div class="connector-point right"></div>
+                <div class="connector-point left" v-if="roundIndex > 0"></div>
+              </template>
+              
+              <!-- 垂直连接线和连接点 -->
+              <template v-if="roundIndex < rounds.length - 1 && matchIndex % 2 === 0">
+                <div 
+                  class="connector vertical"
+                  :style="{
+                    height: getVerticalConnectorHeight(roundIndex) + 'px',
+                    top: '40px',
+                    left: 'calc(100% + 30px)'
+                  }"
+                ></div>
+                <div 
+                  class="connector-point bottom"
+                  :style="{
+                    top: `${40 + getVerticalConnectorHeight(roundIndex)}px`,
+                    left: 'calc(100% + 30px)'
+                  }"
+                ></div>
+              </template>
             </div>
           </div>
         </div>
@@ -174,25 +202,40 @@ const getRoundTitle = (index) => {
     return `第${index + 1}轮`
   }
 }
+
+// 获取垂直连接线的高度
+const getVerticalConnectorHeight = (roundIndex) => {
+  switch (roundIndex) {
+    case 0: return 60
+    case 1: return 120
+    case 2: return 240
+    default: return 60
+  }
+}
 </script>
 
 <style scoped>
 .tournament-bracket {
   padding: 20px;
   overflow-x: auto;
+  width: 100%;
+  background-color: #f5f5f5;
 }
 
 .bracket-container {
   display: flex;
-  gap: 40px;
+  gap: 60px;
   min-width: fit-content;
+  justify-content: center;
+  padding: 40px 20px;
+  position: relative;
 }
 
 .round {
   display: flex;
   flex-direction: column;
-  gap: 20px;
   position: relative;
+  min-width: 200px;
 }
 
 .round-title {
@@ -200,17 +243,56 @@ const getRoundTitle = (index) => {
   font-weight: bold;
   color: #666;
   padding: 8px 0;
+  margin-bottom: 20px;
 }
 
 .matches {
   display: flex;
   flex-direction: column;
-  gap: 30px;
   position: relative;
+}
+
+.match-container {
+  position: relative;
+  margin-bottom: 60px;
+}
+
+/* 第一轮特殊处理 */
+.round:nth-child(1) .match-container {
+  margin-bottom: 60px;
+}
+
+/* 第二轮特殊处理 */
+.round:nth-child(2) .match-container {
+  margin-bottom: 120px;
+}
+
+.round:nth-child(2) .matches {
+  padding-top: 90px;
+}
+
+/* 第三轮特殊处理 */
+.round:nth-child(3) .match-container {
+  margin-bottom: 240px;
+}
+
+.round:nth-child(3) .matches {
+  padding-top: 180px;
+}
+
+/* 第四轮特殊处理 */
+.round:nth-child(4) .matches {
+  padding-top: 300px;
+}
+
+/* 最后一个比赛不需要底部间距 */
+.match-container:last-child {
+  margin-bottom: 0;
 }
 
 .match {
   position: relative;
+  height: 80px;
 }
 
 .match-wrapper {
@@ -222,6 +304,8 @@ const getRoundTitle = (index) => {
   position: relative;
   cursor: pointer;
   transition: all 0.3s;
+  z-index: 2;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .match-wrapper:hover {
@@ -239,6 +323,7 @@ const getRoundTitle = (index) => {
   align-items: center;
   padding: 8px 12px;
   border-bottom: 1px solid #f5f5f5;
+  height: 40px;
 }
 
 .player:last-child {
@@ -265,66 +350,62 @@ const getRoundTitle = (index) => {
 }
 
 /* 连接线样式 */
-.match {
-  display: flex;
-  align-items: center;
+.connector {
+  position: absolute;
+  background-color: #1e88e5;
+  z-index: 1;
 }
 
 /* 水平连接线 */
-.match::after {
-  content: '';
-  position: absolute;
-  left: 100%;
-  top: 50%;
-  width: 40px;
+.connector.horizontal {
+  width: 30px;
   height: 2px;
-  background-color: #e5e5e5;
+  right: -30px;
+  top: 50%;
   transform: translateY(-50%);
 }
 
 /* 垂直连接线 */
-.matches .match:nth-child(odd)::before {
-  content: '';
-  position: absolute;
-  left: calc(100% + 40px);
-  top: 50%;
+.connector.vertical {
   width: 2px;
-  height: calc(100% + 30px);
-  background-color: #e5e5e5;
+  position: absolute;
 }
 
-/* 调整每轮的垂直间距 */
-.round:nth-child(2) .matches {
-  margin-top: 45px;
+/* 连接点样式 */
+.connector-point {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: #1e88e5;
+  border-radius: 50%;
+  z-index: 2;
 }
 
-.round:nth-child(3) .matches {
-  margin-top: 105px;
+.connector-point.right {
+  right: -32px;
+  top: 50%;
+  transform: translate(0, -50%);
 }
 
-/* 最后一轮不需要连接线 */
-.round:last-child .match::after,
-.round:last-child .match::before {
-  display: none;
+.connector-point.left {
+  left: -3px;
+  top: 50%;
+  transform: translate(0, -50%);
 }
 
-/* 每轮最后一个比赛不需要垂直连接线 */
-.matches .match:last-child::before {
-  display: none;
+.connector-point.bottom {
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
 }
 
 /* 确保决赛垂直居中 */
 .round:last-child {
   justify-content: center;
-  margin-top: auto;
-  margin-bottom: auto;
+  align-self: center;
 }
 
-/* 调整第一轮的间距 */
-.round:first-child .matches {
-  margin-top: 0;
-}
-
+/* 弹窗样式保持不变 */
 .score-dialog {
   padding: 20px;
 }
@@ -396,5 +477,29 @@ const getRoundTitle = (index) => {
 
 :deep(.van-field__button) {
   min-width: auto;
+}
+
+/* 媒体查询，适配移动设备 */
+@media screen and (max-width: 768px) {
+  .bracket-container {
+    gap: 30px;
+  }
+  
+  .match-wrapper {
+    width: 160px;
+  }
+  
+  .connector.horizontal {
+    width: 15px;
+    right: -15px;
+  }
+  
+  .connector-point.right {
+    right: -17px;
+  }
+  
+  .connector-point.left {
+    left: -3px;
+  }
 }
 </style> 
