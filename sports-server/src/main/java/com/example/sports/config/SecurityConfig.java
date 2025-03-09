@@ -12,6 +12,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import lombok.extern.slf4j.Slf4j;
+import com.example.sports.config.JwtAuthenticationFilter;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -33,7 +34,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .cors().and()
             .csrf().disable()
             .authorizeRequests()
-            .antMatchers("/user/register", "/user/register/admin", "/user/login").permitAll()
+            .antMatchers("/user/register", "/user/register/admin", "/user/login",
+                "/swagger-ui/**",
+                "/swagger-resources/**",
+                "/v3/api-docs/**",
+                "/webjars/**").permitAll()
             .anyRequest().authenticated()
             .and()
             .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
@@ -57,4 +62,4 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         log.debug("CORS 配置完成");
         return source;
     }
-} 
+}

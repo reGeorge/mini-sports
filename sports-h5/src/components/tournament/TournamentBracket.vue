@@ -246,7 +246,6 @@ const updateConnections = async () => {
         }
       })
     }
-    console.log(connectionPaths.value);
   })
 }
 
