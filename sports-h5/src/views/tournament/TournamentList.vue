@@ -331,8 +331,9 @@ onMounted(() => {
   --van-floating-bubble-background: var(--van-primary-color);
   --van-floating-bubble-color: #fff;
   --van-floating-bubble-z-index: 999;
+  position: fixed;
   right: 16px;
-  bottom: 200px;
+  bottom: calc(var(--van-tabbar-height) + 16px);
 }
 
 .create-button :deep(.van-icon) {
