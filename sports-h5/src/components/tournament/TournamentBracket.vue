@@ -7,7 +7,7 @@
         <div class="matches">
           <div v-for="(match, matchIndex) in round" :key="match.id" class="match-container">
             <div class="match">
-              <div class="match-wrapper" @click="handleMatchClick(match)">
+              <div :id="roundIndex" class="match-wrapper" @click="handleMatchClick(match)">
                 <div class="player" :class="{ 'winner': match.winner === 'PLAYER1' }">
                   <span class="player-name">{{ match.player1Name || '轮空' }}</span>
                   <span class="score">{{ match.player1Score || 0 }}</span>
@@ -16,38 +16,28 @@
                   <span class="player-name">{{ match.player2Name || '轮空' }}</span>
                   <span class="score">{{ match.player2Score || 0 }}</span>
                 </div>
+
+                <!-- 连接点 -->
+                <template v-if="roundIndex >= 0">
+                  <div class="connector-point right" v-if="roundIndex < rounds.length - 1" :data-match-id="match.id"></div>
+                  <div class="connector-point left" v-if="roundIndex > 0" :data-match-id="match.id"></div>
+                </template>
               </div>
-              
-              <!-- 水平连接线和连接点 -->
-              <template v-if="roundIndex < rounds.length - 1">
-                <div class="connector horizontal"></div>
-                <div class="connector-point right"></div>
-                <div class="connector-point left" v-if="roundIndex > 0"></div>
-              </template>
-              
-              <!-- 垂直连接线和连接点 -->
-              <template v-if="roundIndex < rounds.length - 1 && matchIndex % 2 === 0">
-                <div 
-                  class="connector vertical"
-                  :style="{
-                    height: getVerticalConnectorHeight(roundIndex) + 'px',
-                    top: '40px',
-                    left: 'calc(100% + 30px)'
-                  }"
-                ></div>
-                <div 
-                  class="connector-point bottom"
-                  :style="{
-                    top: `${40 + getVerticalConnectorHeight(roundIndex)}px`,
-                    left: 'calc(100% + 30px)'
-                  }"
-                ></div>
-              </template>
             </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- SVG 容器用于绘制连接线 -->
+    <svg class="connections-svg" ref="svgContainer">
+      <path
+        v-for="(path, index) in connectionPaths"
+        :key="index"
+        :d="path"
+        class="connector-path"
+      />
+    </svg>
 
     <!-- 比分设置弹窗 -->
     <van-popup 
@@ -110,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { showToast } from 'vant'
 import { updateMatchScore } from '@/api/match'
 
@@ -203,15 +193,77 @@ const getRoundTitle = (index) => {
   }
 }
 
-// 获取垂直连接线的高度
-const getVerticalConnectorHeight = (roundIndex) => {
-  switch (roundIndex) {
-    case 0: return 60
-    case 1: return 120
-    case 2: return 240
-    default: return 60
-  }
+// SVG 容器引用
+const svgContainer = ref(null)
+
+// 连接线路径数组
+const connectionPaths = ref([])
+
+// 更新连接线
+// 该方法负责计算和绘制淘汰赛对阵图中的SVG连接线
+// 1. 遍历每一轮比赛
+// 2. 计算每场比赛的连接点坐标
+// 3. 使用贝塞尔曲线绘制连接线，确保线条平滑美观
+const updateConnections = async () => {
+  await nextTick()
+  connectionPaths.value = []
+  
+  rounds.value.forEach((round, roundIndex) => {
+    if (roundIndex < rounds.value.length - 1) {
+      // 遍历当前轮次的所有比赛，为每场比赛创建与下一轮的连接
+      const currentRoundMatches = document.querySelectorAll(`.match-wrapper[id="${roundIndex}"]`)
+      const nextRoundMatches = document.querySelectorAll(`.match-wrapper[id="${roundIndex + 1}"]`)
+      
+      currentRoundMatches.forEach((currentMatch, matchIndex) => {
+        const nextMatchIndex = Math.floor(matchIndex / 2)
+        if (nextMatchIndex < nextRoundMatches.length) {
+          const startPoint = currentMatch.querySelector('.connector-point.right')
+          const endPoint = nextRoundMatches[nextMatchIndex].querySelector('.connector-point.left')
+          
+          if (startPoint && endPoint) {
+            const startRect = startPoint.getBoundingClientRect()
+            const endRect = endPoint.getBoundingClientRect()
+            const svgRect = svgContainer.value.getBoundingClientRect()
+            
+            const start = {
+              x: startRect.left - svgRect.left + startRect.width,
+              y: startRect.top - svgRect.top + startRect.height / 2
+            }
+            
+            const end = {
+              x: endRect.left - svgRect.left,
+              y: endRect.top - svgRect.top + endRect.height / 2
+            }
+            
+            const controlPoint = {
+              x: start.x + (end.x - start.x) / 2,
+              y: start.y
+            }
+            
+            const path = `M ${start.x} ${start.y} C ${controlPoint.x} ${start.y}, ${controlPoint.x} ${end.y}, ${end.x} ${end.y}`
+            connectionPaths.value.push(path)
+          }
+        }
+      })
+    }
+    console.log(connectionPaths.value);
+  })
 }
+
+// 监听窗口大小变化
+window.addEventListener('resize', updateConnections)
+
+// 组件挂载后更新连接线
+onMounted(() => {
+  updateConnections()
+})
+
+// 监听比赛数据变化
+watch(() => props.matches, () => {
+  nextTick(() => {
+    updateConnections()
+  })
+})
 </script>
 
 <style scoped>
@@ -299,7 +351,7 @@ const getVerticalConnectorHeight = (roundIndex) => {
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 4px;
-  overflow: hidden;
+  overflow: visible;
   width: 200px;
   position: relative;
   cursor: pointer;
@@ -349,28 +401,6 @@ const getVerticalConnectorHeight = (roundIndex) => {
   text-align: right;
 }
 
-/* 连接线样式 */
-.connector {
-  position: absolute;
-  background-color: #1e88e5;
-  z-index: 1;
-}
-
-/* 水平连接线 */
-.connector.horizontal {
-  width: 30px;
-  height: 2px;
-  right: -30px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-/* 垂直连接线 */
-.connector.vertical {
-  width: 2px;
-  position: absolute;
-}
-
 /* 连接点样式 */
 .connector-point {
   position: absolute;
@@ -382,22 +412,34 @@ const getVerticalConnectorHeight = (roundIndex) => {
 }
 
 .connector-point.right {
-  right: -32px;
+  right: -1px;
   top: 50%;
   transform: translate(0, -50%);
 }
 
 .connector-point.left {
-  left: -3px;
+  left: 0px;
   top: 50%;
   transform: translate(0, -50%);
 }
 
-.connector-point.bottom {
-  transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
+/* SVG 容器样式 */
+.connections-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
 }
+
+.connector-path {
+  fill: none;
+  stroke: #1e88e5;
+  stroke-width: 2px;
+}
+
 
 /* 确保决赛垂直居中 */
 .round:last-child {
@@ -489,17 +531,7 @@ const getVerticalConnectorHeight = (roundIndex) => {
     width: 160px;
   }
   
-  .connector.horizontal {
-    width: 15px;
-    right: -15px;
-  }
   
-  .connector-point.right {
-    right: -17px;
-  }
   
-  .connector-point.left {
-    left: -3px;
-  }
 }
-</style> 
+</style>
