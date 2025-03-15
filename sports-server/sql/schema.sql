@@ -1,4 +1,14 @@
-# 完整的数据库表结构
+--  完整的数据库表结构
+
+-- # 检查 MySQL 服务状态
+-- mysql.server status
+
+-- # 停止 MySQL 服务
+-- mysql.server stop
+
+-- # 重启 MySQL 服务
+-- mysql.server restart
+
 
 -- 创建用户表
 CREATE TABLE user (
