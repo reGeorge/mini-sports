@@ -46,7 +46,7 @@ sports/
 
 ## 功能特性
 详细实现效果见：
-https://www.yuque.com/yuqueyonghu2golsy/xg1xvc/qoombg8wlhmfnvi3?singleDoc# 《球赛报名系统功能说明》
+https://www.yuque.com/yuqueyonghu2golsy/xg1xvc/qoombg8wlhmfnvi3?singleDoc# 
 
 ### 1. 用户管理
 - [x] 用户注册
