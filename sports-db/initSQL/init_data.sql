@@ -1,4 +1,4 @@
-# 创建新文件
+-- 创建新文件
 -- 初始化角色数据
 INSERT INTO role (name, code, description) VALUES
 ('系统管理员', 'ROLE_ADMIN', '系统管理员，拥有所有权限'),

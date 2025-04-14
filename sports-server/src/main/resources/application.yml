@@ -4,8 +4,11 @@ server:
     context-path: /
 
 spring:
+  config:
+    activate:
+      on-profile: prod
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/sports_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&characterEncoding=UTF-8&autoReconnect=true
+    url: jdbc:mysql://database:3306/sports_db?useSSL=false&...
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -50,3 +53,11 @@ logging:
     org.springframework.web: DEBUG
   file:
     name: logs/spring.log 
+
+volumes:
+  mysql_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./mysql-data  # 数据将保存在项目下的mysql-data目录 

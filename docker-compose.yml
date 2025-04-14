@@ -51,7 +51,7 @@ services:
       context: ./sports-db          # 构建上下文目录
       dockerfile: Dockerfile        # 使用的Dockerfile文件
     ports:
-      - "3306:3306"               # MySQL默认端口映射
+      - "13306:3306"               # MySQL默认端口映射
     environment:                  # 环境变量配置
       <<: *common-variables
       MYSQL_ROOT_PASSWORD: 123456  # 数据库root密码
@@ -69,4 +69,8 @@ networks:
 # 数据卷配置
 volumes:
   mysql_data:                    # MySQL数据持久化卷
-    driver: local                # 使用本地存储驱动 
+    driver: local                # 使用本地存储驱动
+    driver_opts:
+      type: none
+      o: bind
+      device: ./mysql-data       # 数据将保存在项目根目录下的mysql-data目录 

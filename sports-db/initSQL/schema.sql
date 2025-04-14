@@ -153,6 +153,17 @@ CREATE TABLE match_record (
     FOREIGN KEY (referee_id) REFERENCES user(id)
 ) COMMENT '比赛记录表';
 
+-- 创建积分规则表
+CREATE TABLE points_rule (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL COMMENT '规则名称',
+    type VARCHAR(50) NOT NULL COMMENT '规则类型',
+    points INT NOT NULL COMMENT '积分值',
+    description VARCHAR(200) COMMENT '规则描述',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+) COMMENT '积分规则表';
+
 -- 创建积分记录表
 CREATE TABLE points_record (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
