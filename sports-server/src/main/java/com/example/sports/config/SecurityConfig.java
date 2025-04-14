@@ -35,10 +35,13 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             .csrf().disable()
             .authorizeRequests()
             .antMatchers("/user/register", "/user/register/admin", "/user/login",
-                "/swagger-ui/**",
+                // Swagger相关路径已禁用
+                /*"/swagger-ui/**",
                 "/swagger-resources/**",
                 "/v3/api-docs/**",
-                "/webjars/**").permitAll()
+                "/actuator/**",
+                "/webjars/**"*/
+                "/actuator/**").permitAll()
             .anyRequest().authenticated()
             .and()
             .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)

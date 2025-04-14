@@ -1,0 +1,72 @@
+version: '3.8'  # 使用docker-compose版本3.8
+
+# 添加全局配置
+x-common-variables: &common-variables
+  TZ: Asia/Shanghai
+
+services:
+  # 前端服务配置
+  frontend:
+    image: mini-sports-frontend  # 镜像名称
+    build:
+      context: ./sports-h5      # 构建上下文目录
+      dockerfile: Dockerfile     # 使用的Dockerfile文件
+    ports:
+      - "80:80"                 # 端口映射：主机端口:容器端口
+    environment:
+      <<: *common-variables
+      BACKEND_URL: http://backend:8088  # 后端服务地址
+    restart: always             # 容器崩溃时自动重启
+    depends_on:                 # 依赖关系
+      - backend
+    networks:
+      - sports-network         # 使用的网络
+
+  # 后端服务配置
+  backend:
+    image: mini-sports-backend  # 镜像名称
+    build:
+      context: ./sports-server  # 构建上下文目录
+      dockerfile: Dockerfile     # 使用的Dockerfile文件
+    ports:
+      - "8088:8088"            # 端口映射：主机端口:容器端口
+    restart: always            # 容器崩溃时自动重启
+    environment:               # 环境变量配置
+      <<: *common-variables
+      # 数据库连接配置
+      SPRING_DATASOURCE_URL: jdbc:mysql://database:3306/sports_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+      SPRING_PROFILES_ACTIVE: prod  # 使用生产环境配置
+      SERVER_PORT: 8088             # 应用服务端口
+    depends_on:                      # 依赖关系
+      - database
+    networks:
+      - sports-network              # 使用的网络
+
+  # 数据库服务配置
+  database:
+    image: mini-sports-database     # 镜像名称
+    build:
+      context: ./sports-db          # 构建上下文目录
+      dockerfile: Dockerfile        # 使用的Dockerfile文件
+    ports:
+      - "3306:3306"               # MySQL默认端口映射
+    environment:                  # 环境变量配置
+      <<: *common-variables
+      MYSQL_ROOT_PASSWORD: 123456  # 数据库root密码
+      MYSQL_DATABASE: sports_db    # 默认创建的数据库名
+    volumes:                      # 数据持久化配置
+      - mysql_data:/var/lib/mysql  # 挂载数据卷
+    networks:
+      - sports-network            # 使用的网络
+    
+# 网络配置
+networks:
+  sports-network:                # 自定义网络
+    driver: bridge               # 使用bridge驱动，用于容器间通信
+
+# 数据卷配置
+volumes:
+  mysql_data:                    # MySQL数据持久化卷
+    driver: local                # 使用本地存储驱动 
