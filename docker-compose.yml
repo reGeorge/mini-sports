@@ -33,12 +33,12 @@ services:
     restart: always            # 容器崩溃时自动重启
     environment:               # 环境变量配置
       <<: *common-variables
-      # 数据库连接配置
-      SPRING_DATASOURCE_URL: jdbc:mysql://database:8088/sports_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: 123456
-      SPRING_PROFILES_ACTIVE: prod  # 使用生产环境配置
-      SERVER_PORT: 8088             # 应用服务端口
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+      SPRING_PROFILES_ACTIVE: prod
+      SERVER_PORT: 8088
+      JWT_SECRET: ${JWT_SECRET}
     depends_on:                      # 依赖关系
       - database
     networks:

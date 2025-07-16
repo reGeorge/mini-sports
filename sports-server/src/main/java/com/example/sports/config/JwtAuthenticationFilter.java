@@ -18,7 +18,7 @@ import java.util.Collections;
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    private static final String JWT_SECRET = "your-secret-key";  // 注意：应该和生成token时使用相同的密钥
+    private static final String JWT_SECRET = System.getenv().getOrDefault("JWT_SECRET", "your-secret-key");  // 优先用环境变量
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

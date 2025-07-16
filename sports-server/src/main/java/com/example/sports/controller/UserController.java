@@ -46,7 +46,7 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    private static final String JWT_SECRET = "your-secret-key";
+    private static final String JWT_SECRET = System.getenv().getOrDefault("JWT_SECRET", "your-secret-key");
     private static final long JWT_EXPIRATION = 24 * 60 * 60 * 1000; // 24 hours
 
     @GetMapping("/test")
