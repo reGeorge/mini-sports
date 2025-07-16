@@ -44,19 +44,73 @@ sports/
     └── package.json
 ```
 
+## Docker 一键部署（推荐）
+
+### 步骤
+1. 配置环境变量：
+   - 在项目根目录下新建 `.env` 文件，内容如下：
+     ```
+     SPRING_DATASOURCE_URL=jdbc:mysql://database:3306/sports_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+     SPRING_DATASOURCE_USERNAME=root
+     SPRING_DATASOURCE_PASSWORD=请修改为安全密码
+     JWT_SECRET=请修改为安全JWT密钥
+     ```
+   - 建议将 `.env` 文件加入 `.gitignore`，避免敏感信息泄露。
+
+2. 一键部署：
+   ```bash
+   chmod +x deploy.sh stop-services.sh
+   ./deploy.sh
+   ```
+   - 脚本会自动完成前端、后端构建和 Docker 服务启动。
+   - 如需停止服务，执行 `./stop-services.sh`
+
+3. 访问服务：
+   - 前端：http://localhost
+   - 后端API：http://localhost:8088
+
+### 常见问题
+- 容器未启动成功，请检查 `.env` 配置和端口占用。
+- 数据库数据持久化在 `mysql-data/` 目录，日志在 `logs/` 目录。
+- 如需自定义配置，请修改 `my.cnf` 或 `.env` 文件。
+
 ## 功能特性
 ![详细需求描述](docs/prd.md)
 
 原型图：
 ![乒乓球比赛管理系统原型图](sports-h5/public/images/prototype.png)
 
+## API 文档
+API 接口文档使用 Swagger 生成，启动后端服务后访问：
+```
+http://localhost:8088/swagger-ui.html
+```
 
 ## 开发环境要求
 - JDK 17
 - Node.js 16+
 - MySQL 8.0+
 
-## 快速开始
+## 注意事项
+
+### 1. 安全性考虑
+- 用户信息保护
+- 支付安全
+- 数据备份
+
+### 2. 性能优化
+- 首屏加载优化
+- 请求响应优化
+- 数据缓存策略
+
+### 3. 用户体验
+- 界面交互设计
+- 操作流程优化
+- 错误提示友好化
+
+## 传统手动部署方式（不推荐）
+
+> 推荐使用上方的 Docker 一键部署，以下为传统方式，仅供参考。
 
 ### 后端启动
 1. 创建数据库并导入 SQL 文件
@@ -75,10 +129,35 @@ npm install
 npm run serve
 ```
 
-## API 文档
-API 接口文档使用 Swagger 生成，启动后端服务后访问：
+### 简单部署方案
+```bash
+# 前端打包
+npm run build
+# 将dist目录放到nginx的html目录
+
+# 后端打包
+mvn package
+# 运行jar包
+java -jar sports-server.jar
 ```
-http://localhost:8088/swagger-ui.html
+
+### nginx配置示例
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    # 前端页面
+    location / {
+        root /usr/share/nginx/html;
+        try_files $uri $uri/ /index.html;
+    }
+
+    # 后端接口
+    location /api {
+        proxy_pass http://localhost:8080;
+    }
+}
 ```
 
 ## 项目进度
@@ -163,56 +242,6 @@ http://localhost:8088/swagger-ui.html
    - 使用浏览器开发者工具的手机模式
    - 真机访问H5页面测试
    - postman测试后端接口
-
-## 部署说明
-
-1. **简单部署方案**
-```bash
-# 前端打包
-npm run build
-# 将dist目录放到nginx的html目录
-
-# 后端打包
-mvn package
-# 运行jar包
-java -jar sports-server.jar
-```
-
-2. **nginx配置示例**
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    # 前端页面
-    location / {
-        root /usr/share/nginx/html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    # 后端接口
-    location /api {
-        proxy_pass http://localhost:8080;
-    }
-}
-```
-
-## 注意事项
-
-### 1. 安全性考虑
-- 用户信息保护
-- 支付安全
-- 数据备份
-
-### 2. 性能优化
-- 首屏加载优化
-- 请求响应优化
-- 数据缓存策略
-
-### 3. 用户体验
-- 界面交互设计
-- 操作流程优化
-- 错误提示友好化
 
 ## 后续规划
 
