@@ -1,4 +1,4 @@
---  完整的数据库表结构
+--  Flyway V1: 初始化数据库表结构
 
 -- # 检查 MySQL 服务状态
 -- mysql.server status
@@ -8,7 +8,6 @@
 
 -- # 重启 MySQL 服务
 -- mysql.server restart
-
 
 -- 创建用户表
 CREATE TABLE user (
@@ -177,4 +176,4 @@ CREATE TABLE points_record (
     created_at DATETIME NOT NULL COMMENT '创建时间',
     FOREIGN KEY (user_id) REFERENCES user(id),
     FOREIGN KEY (rule_id) REFERENCES points_rule(id)
-) COMMENT '积分记录表';
+) COMMENT '积分记录表'; 

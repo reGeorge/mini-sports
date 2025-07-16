@@ -12,4 +12,4 @@ SELECT
 INSERT INTO role_permission (role_id, permission_id) 
 SELECT 
     (SELECT id FROM role WHERE code = 'ROLE_ADMIN'),
-    (SELECT id FROM permission WHERE code = 'game:register');
+    (SELECT id FROM permission WHERE code = 'game:register'); 
