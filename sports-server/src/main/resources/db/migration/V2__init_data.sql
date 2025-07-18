@@ -52,13 +52,35 @@ INSERT INTO user (
 ) VALUES (
     'admin',
     '13800138000',
-    '$2a$10$RHJPHxqHRF.kJDYFxDxvwuYw3VqJYfd0LHHHNtXNBiYHZFNB0hvDe', -- 密码：admin123
+    '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', -- 密码：wb12345
     0,
     'ADMIN',
     1,
     NOW(),
     NOW()
 );
+
+-- 初始化15个普通用户账号，默认积分1500，密码：wb12345
+INSERT INTO user (nickname, phone, credential, points, level, status, created_at, updated_at) VALUES
+('普通用户1', '13800000001', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户2', '13800000002', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户3', '13800000003', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户4', '13800000004', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户5', '13800000005', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户6', '13800000006', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户7', '13800000007', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户8', '13800000008', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户9', '13800000009', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户10', '13800000010', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户11', '13800000011', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户12', '13800000012', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户13', '13800000013', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户14', '13800000014', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW()),
+('普通用户15', '13800000015', '$2a$10$2ADxBJkOuRqs29XS4Qi3uu78Oz8O0rChRgK50DKdy1eT1hT818dl6', 1500, 'BEGINNER', 1, NOW(), NOW());
+
+-- 为普通用户分配普通用户角色
+INSERT INTO user_role (user_id, role_id)
+SELECT u.id, r.id FROM user u, role r WHERE r.code = 'ROLE_USER' AND u.nickname LIKE '普通用户%';
 
 -- 为管理员分配角色
 INSERT INTO user_role (user_id, role_id)
